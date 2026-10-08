@@ -1,0 +1,16 @@
+# Optional Render Blueprint. Alternatively create a Web Service from the dashboard.
+services:
+  - type: web
+    name: rocket-arena-server
+    runtime: node
+    plan: free
+    buildCommand: npm ci
+    startCommand: npm start
+    healthCheckPath: /api/status
+    envVars:
+      - key: NODE_VERSION
+        value: '22'
+      - key: MAX_ROOMS
+        value: '4'
+      - key: ALLOWED_ORIGINS
+        sync: false

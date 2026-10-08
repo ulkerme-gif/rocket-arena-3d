@@ -1,0 +1,17 @@
+#online-panel { z-index: 20; }
+.online-form { display:flex; flex-direction:column; gap:8px; margin:26px 0 4px; max-width:410px; }
+.online-form label { letter-spacing: .15em; color:#9bbacc; font:700 11px/1.5 system-ui; }
+.online-form input { background:#091e2f; border:1px solid #3b627d; color:white; border-radius:9px; padding:13px 16px; font:600 18px/1.4 system-ui; outline-offset:2px; }
+.online-form button { margin-top:8px; }
+#online-status { min-height:26px; font: 600 13px/1.6 system-ui; color:#d0e2ee; }
+.online-back { display:inline-block; margin-top:4px; color:#b1d2e6; font:600 13px system-ui; text-decoration:none; }
+.online-back:hover { text-decoration:underline; }
+#online-leave { cursor:pointer; }
+@media(max-width:650px) {.menu-side{display:none;} .menu-shell{width:100%;} .online-form{max-width:100%;} }
+
+#online-toast{font-size:clamp(36px,5vw,65px);padding:0 18px;}
+.menu-actions a.btn{text-decoration:none;}
+
+/* External WebSocket endpoint used when frontend is on GitHub Pages. */
+#server-url { width: 100%; box-sizing: border-box; }
+.server-help { display:block; margin:0.1rem 0 0.5rem; color:#b7c9d8; font-size:0.78rem; line-height:1.35; }

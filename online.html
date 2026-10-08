@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="tr">
+<head><meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/><meta name="theme-color" content="#061320"/><title>Rocket Arena 3D — ONLINE 1v1</title></head>
+<body>
+  <canvas id="game-canvas" aria-label="Çevrimiçi Rocket Arena oyun sahası"></canvas>
+  <div id="online-ui">
+    <header id="online-hud" class="hud hidden">
+      <span class="hud-brand">ROCKET <b>ARENA</b> <span>ONLINE</span></span>
+      <div class="scoreboard"><span class="score score-blue" id="online-blue">0</span><div class="score-clock"><span id="online-clock">5:00</span><small id="online-period">1v1 ONLINE</small></div><span class="score score-orange" id="online-orange">0</span></div>
+      <button class="hud-pause" type="button" id="online-leave">ÇIK</button>
+    </header>
+    <div id="online-boost" class="boost-widget hidden"><span class="boost-caption">BOOST</span><strong id="online-boost-number">0</strong><div class="boost-track"><div id="online-boost-fill" class="boost-fill"></div></div></div>
+    <div id="online-camera" class="camera-label hidden">BALL CAM <strong>ON</strong></div>
+    <button type="button" id="online-rematch" class="btn btn-primary hidden" style="position:absolute;top:56%;left:50%;transform:translateX(-50%);z-index:12;white-space:nowrap">TEKRAR MAÇ →</button>
+    <div id="online-toast" class="center-message hidden" role="status"></div>
+    <div id="online-panel" class="overlay menu-overlay">
+      <div class="menu-shell">
+        <div class="eyebrow"><span class="signal"></span> RASPBERRY PI · ONLINE ARENA</div>
+        <h1>ROCKET<br/><em>ARENA</em><span>ONLINE</span></h1>
+        <p class="menu-sub">Arkadaşınla gerçek zamanlı 1v1. Aynı oda kodunu yazın.</p>
+        <div class="online-form">
+          <label for="player-name">OYUNCU ADI</label>
+          <input id="player-name" maxlength="24" value="Oyuncu" autocomplete="nickname"/>
+          <label for="server-url">ONLINE SUNUCU ADRESİ</label>
+          <input id="server-url" type="url" placeholder="https://rocket-arena-server.onrender.com" autocomplete="url" spellcheck="false" />
+          <small class="server-help">GitHub Pages için Render adresini buraya yaz. Pi kullanırken Cloudflare Tunnel adresini gir. Adres bu tarayıcıda saklanır.</small>
+          <label for="room-code">ODA KODU (İKİNİZ DE AYNI KODU GİRİN)</label>
+          <input id="room-code" maxlength="14" value="ARENA123" autocapitalize="characters" spellcheck="false"/>
+          <button id="online-join" class="btn btn-primary" type="button">ODAYA GİR <span>→</span></button>
+          <p id="online-status" role="status">Sunucuya bağlanmak için odaya gir.</p>
+          <a class="online-back" href="./">← Tek oyunculu oyuna dön</a>
+        </div>
+      </div>
+      <div class="menu-side"><div class="big-number">1<span>VS1</span></div><span>LIVE<br/>MATCH</span></div>
+    </div>
+    <div id="online-controls" class="control-strip"><span><b>WASD</b> SÜR</span><span><b>SPACE</b> ZIPLA</span><span><b>SHIFT</b> BOOST</span><span><b>CTRL</b> DRIFT</span><span><b>C</b> TOP KAMERASI</span><span><b>ESC</b> SERBEST</span></div>
+  </div>
+  <script type="module" src="/src/online-main.js"></script>
+</body>
+</html>

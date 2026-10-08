@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#07111e" />
+  <title>Rocket Arena 3D — Car Soccer</title>
+</head>
+<body>
+  <canvas id="game-canvas" aria-label="Rocket Arena 3D oyun sahası"></canvas>
+  <div id="app" class="app">
+    <header id="hud" class="hud hidden" aria-live="off">
+      <div class="hud-brand">ROCKET <b>ARENA</b><span> 3D</span></div>
+      <div class="scoreboard" aria-label="Maç skoru">
+        <div class="score score-blue" id="score-blue">0</div>
+        <div class="score-clock"><span id="clock">5:00</span><small id="period">1v1</small></div>
+        <div class="score score-orange" id="score-orange">0</div>
+      </div>
+      <button class="hud-pause" id="pause-button" type="button" aria-label="Oyunu duraklat">Ⅱ <span>MENU</span></button>
+    </header>
+    <div id="boost-widget" class="boost-widget hidden"><span class="boost-caption">BOOST</span><strong id="boost-number">33</strong><div class="boost-track"><div id="boost-fill" class="boost-fill"></div></div></div>
+    <div id="camera-label" class="camera-label hidden">BALL CAM <strong>ON</strong></div>
+    <div id="center-message" class="center-message hidden" role="status" aria-live="polite"></div>
+    <div id="debug-panel" class="debug-panel hidden"></div>
+    <main id="main-menu" class="overlay menu-overlay">
+      <div class="menu-shell">
+        <div class="eyebrow"><span class="signal"></span> BROWSER EDITION · EARLY ACCESS</div>
+        <h1>ROCKET<br/><em>ARENA</em><span>3D</span></h1>
+        <p class="menu-sub">Roket gücü. Büyük goller. Gerçek 3D araç fiziği.</p>
+        <div class="menu-actions">
+          <button id="play-match" type="button" class="btn btn-primary">1V1 · BOTA KARŞI <span>→</span></button>
+          <a href="./online.html" class="btn btn-secondary">ONLINE 1V1 · ARKADAŞLA <span>🌐</span></a>
+          <button id="play-training" type="button" class="btn btn-secondary">SERBEST ANTRENMAN <span>↗</span></button>
+          <button id="open-settings" type="button" class="btn btn-quiet">⚙ OYUN AYARLARI</button>
+        </div>
+        <div class="menu-meta"><span>THREE.JS</span><i></i><span>RAPIER PHYSICS</span><i></i><span>120 HZ PHYSICS</span></div>
+      </div>
+      <div class="menu-side"><div class="big-number">01<span>/02</span></div><span>LOCAL<br/>ARCADE</span></div>
+    </main>
+    <section id="pause-menu" class="overlay modal-overlay hidden" aria-label="Duraklatıldı">
+      <div class="modal"><div class="eyebrow">MATCH CONTROL</div><h2>DURAKLATILDI</h2><p>Maç seni bekliyor.</p><button id="resume" class="btn btn-primary">DEVAM ET <span>→</span></button><button id="pause-settings" class="btn btn-secondary">AYARLAR</button><button id="back-to-menu" class="btn btn-quiet">ANA MENÜYE DÖN</button></div>
+    </section>
+    <section id="settings-menu" class="overlay modal-overlay hidden" aria-label="Oyun ayarları">
+      <div class="modal settings-modal"><div class="eyebrow">CUSTOMIZE YOUR GAME</div><h2>AYARLAR</h2>
+        <label class="form-row"><span>Görüş açısı <output id="fov-output">72°</output></span><input id="setting-fov" type="range" min="55" max="100" step="1" /></label>
+        <label class="form-row"><span>Kamera mesafesi <output id="distance-output">3.1</output></span><input id="setting-distance" type="range" min="2.3" max="6.5" step="0.1" /></label>
+        <label class="form-row"><span>Bot zorluğu</span><select id="setting-bot"><option value="easy">Kolay</option><option value="normal">Orta</option><option value="hard">Zor</option></select></label>
+        <label class="check-row"><span>Gölgeler</span><input id="setting-shadows" type="checkbox" /></label>
+        <label class="check-row"><span>Varsayılan top kamerası</span><input id="setting-ballcam" type="checkbox" /></label>
+        <button id="close-settings" class="btn btn-primary">KAYDET VE GERİ DÖN <span>→</span></button>
+        <button id="reset-settings" class="btn btn-quiet">VARSAYILANLARA SIFIRLA</button>
+      </div>
+    </section>
+    <section id="end-menu" class="overlay modal-overlay hidden" aria-label="Maç sonu">
+      <div class="modal"><div class="eyebrow">FULL TIME</div><h2 id="match-result">MAÇ BİTTİ</h2><div id="final-score" class="final-score">0 — 0</div><button id="rematch" class="btn btn-primary">TEKRAR OYNA <span>→</span></button><button id="end-to-menu" class="btn btn-quiet">ANA MENÜ</button></div>
+    </section>
+    <div id="control-strip" class="control-strip"><span><b>WASD</b> SÜR</span><span><b>SPACE</b> ZIPLA / FLIP</span><span><b>SHIFT</b> BOOST</span><span><b>CTRL</b> DRIFT</span><span><b>C</b> TOP KAMERASI</span><span><b>ESC</b> DURAKLAT</span></div>
+  </div>
+  <div id="loading-screen" class="loading-screen"><div class="loading-wordmark">ROCKET <b>ARENA</b></div><div id="loading-text">3D motor hazırlanıyor…</div><div class="loading-line"><i></i></div></div>
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>

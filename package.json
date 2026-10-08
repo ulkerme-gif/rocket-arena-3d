@@ -1,0 +1,29 @@
+{
+  "name": "rocket-arena-3d",
+  "version": "0.1.0",
+  "description": "Rocket Arena 3D - tarayicida calisan 3D araba futbolu (Three.js + Rapier)",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "test": "node --test tests/*.test.js",
+    "test:smoke": "node tests/smoke/browser-smoke.mjs",
+    "start": "node server/server.js",
+    "start:server": "node server/server.js"
+  },
+  "license": "UNLICENSED",
+  "dependencies": {
+    "@dimforge/rapier3d-compat": "^0.21.0",
+    "@fontsource/barlow-condensed": "^5.3.0",
+    "three": "^0.186.1",
+    "ws": "^8.18.3"
+  },
+  "devDependencies": {
+    "vite": "^8.3.3"
+  },
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=20.19.0"
+  }
+}
