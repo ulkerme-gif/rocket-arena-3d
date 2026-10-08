@@ -2,7 +2,7 @@
 <html lang="tr">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <meta name="theme-color" content="#07111e" />
   <title>Rocket Arena 3D — Car Soccer</title>
 </head>
@@ -54,6 +54,17 @@
     <section id="end-menu" class="overlay modal-overlay hidden" aria-label="Maç sonu">
       <div class="modal"><div class="eyebrow">FULL TIME</div><h2 id="match-result">MAÇ BİTTİ</h2><div id="final-score" class="final-score">0 — 0</div><button id="rematch" class="btn btn-primary">TEKRAR OYNA <span>→</span></button><button id="end-to-menu" class="btn btn-quiet">ANA MENÜ</button></div>
     </section>
+    <button id="touch-toggle" class="touch-toggle hidden" type="button" aria-label="Dokunmatik oyun tuşlarını gizle" aria-pressed="true">🎮 TUŞLARI GİZLE</button>
+    <div id="touch-controls" class="touch-controls hidden" aria-label="Dokunmatik oyun kontrolleri">
+      <div class="touch-left">
+        <div class="touch-pair"><button type="button" tabindex="-1" data-touch-action="steerLeft" aria-label="Sola dön">◀</button><button type="button" tabindex="-1" data-touch-action="steerRight" aria-label="Sağa dön">▶</button></div>
+        <div class="touch-pair"><button type="button" tabindex="-1" data-touch-action="reverse" aria-label="Geri git">GERİ</button><button type="button" tabindex="-1" data-touch-action="throttle" aria-label="Gaz ver" class="touch-go">GAZ</button></div>
+      </div>
+      <div class="touch-right">
+        <div class="touch-pair"><button type="button" tabindex="-1" data-touch-action="ballCam" aria-label="Top kamerasını değiştir" class="touch-small">KAMERA</button><button type="button" tabindex="-1" data-touch-action="handbrake" aria-label="Drift yap" class="touch-small">DRIFT</button></div>
+        <div class="touch-pair"><button type="button" tabindex="-1" data-touch-action="jump" aria-label="Zıpla" class="touch-jump">ZIPLA</button><button type="button" tabindex="-1" data-touch-action="boost" aria-label="Nitro kullan" class="touch-boost">BOOST</button></div>
+      </div>
+    </div>
     <div id="control-strip" class="control-strip"><span><b>WASD</b> SÜR</span><span><b>SPACE</b> ZIPLA / FLIP</span><span><b>SHIFT</b> BOOST</span><span><b>CTRL</b> DRIFT</span><span><b>C</b> TOP KAMERASI</span><span><b>ESC</b> DURAKLAT</span></div>
   </div>
   <div id="loading-screen" class="loading-screen"><div class="loading-wordmark">ROCKET <b>ARENA</b></div><div id="loading-text">3D motor hazırlanıyor…</div><div class="loading-line"><i></i></div></div>
