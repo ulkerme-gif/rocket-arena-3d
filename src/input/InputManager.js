@@ -1,7 +1,8 @@
 import { clamp } from '../core/math.js';
+import { TouchControls } from './TouchControls.js';
 
 /**
- * Keyboard + gamepad -> one standard ControlState plus UI actions.
+ * Keyboard + gamepad + iPad touch buttons -> one standard ControlState plus UI actions.
  * Keyboard bindings use KeyboardEvent.code (physical key positions), so
  * they work the same on Turkish Q / US layouts. See config/controls.js.
  */
@@ -14,6 +15,10 @@ export class InputManager {
     this.padPrev = new Map();
     this.gameActive = false;
     this.lastDevice = 'keyboard';
+    // On-screen buttons (index.html / online.html #touch-controls). Absent in Node tests without a DOM.
+    this.touch = typeof document !== 'undefined' && document.getElementById
+      ? new TouchControls(document.getElementById('touch-controls'))
+      : null;
     this._gameKeys = new Set(Object.values(controlsConfig.keyboard).flat());
     this._onDown = (e) => this._keyDown(e);
     this._onUp = (e) => this.keys.delete(e.code);
@@ -26,6 +31,7 @@ export class InputManager {
   /** While a match is running, game keys must not scroll or press focused buttons. */
   setGameActive(active) {
     this.gameActive = active;
+    this.touch?.setActive(active);
   }
 
   _keyDown(e) {
@@ -40,12 +46,15 @@ export class InputManager {
 
   _held(action) {
     const list = this.cfg.keyboard[action];
-    return !!list && list.some((c) => this.keys.has(c));
+    return (!!list && list.some((c) => this.keys.has(c))) || !!this.touch?.held(action);
   }
 
   _edge(action) {
     const list = this.cfg.keyboard[action];
-    return !!list && list.some((c) => this.edges.has(c));
+    const key = !!list && list.some((c) => this.edges.has(c));
+    // Always consume the touch edge so a tap is never delivered twice.
+    const touch = !!this.touch?.consumeEdge(action);
+    return key || touch;
   }
 
   getGamepad() {
@@ -65,6 +74,14 @@ export class InputManager {
     let jumpPressed = this._edge('jump');
     let boost = this._held('boost');
     let handbrake = this._held('handbrake');
+    // iPad analog stick: steering + gas/reverse on the ground, pitch in the air.
+    const stick = this.touch?.axes?.();
+    if (stick?.engaged) {
+      steer = stick.steer;
+      throttle = stick.throttle;
+      pitch = stick.pitch;
+      this.lastDevice = 'touch';
+    }
     const actions = {
       ballCam: this._edge('ballCam'),
       reset: this._edge('reset'),
@@ -118,5 +135,6 @@ export class InputManager {
     this.target.removeEventListener('keydown', this._onDown);
     this.target.removeEventListener('keyup', this._onUp);
     window.removeEventListener('blur', this._onBlur);
+    this.touch?.dispose();
   }
 }

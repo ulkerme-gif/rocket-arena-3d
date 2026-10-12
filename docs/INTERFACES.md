@@ -45,3 +45,21 @@ Events: `goal`, `ballHit`, `boostPickup`, `countdown`, `kickoff`, `phase`, `over
 Graphics AI: edit `src/visuals`, `src/styles`, and HTML UI. Avoid writing physics transforms.
 Bot AI: edit `src/ai` only and preserve the BotController contract.
 QA AI: propose patches with tests; do not make assumptions about successfully running browser tests.
+
+## Online host (no server)
+
+```js
+const match = new MatchHost({ RAPIER, roomCode: 'K7M2', teamSize: 2 });
+match.join(localHandle, 'Ev Sahibi', { local: true });   // handle = { send(payload) }
+match.handlePacket(guestLink, { type: 'join', name, version: PROTOCOL_VERSION });
+match.handlePacket(localHandle, { type: 'start' });       // bots fill empty seats
+match.setLocalControls(localHandle, controls);            // host car, every frame
+match.step();                                             // one fixed tick
+match.leave(guestLink);                                   // seat goes back to a bot
+```
+
+Seat ids: `blue-1..3`, `orange-1..3` (`seatList(teamSize)` in `src/game/teams.js`). In single-player the human car keeps the id `player`.
+
+## Touch
+
+`stickToControls(x, y)` (x right, y down, unit circle) → `{ steer, throttle, pitch, engaged }`. Dead zone 0.12; full lock at 85 % deflection; full gas from a small push up; reverse needs a deliberate pull.

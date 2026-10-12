@@ -1,3 +1,8 @@
+> **GÜNCEL DURUM (2026-10-12) — bu belgenin Raspberry Pi / WebSocket kısımları ESKİDİR.**
+> Online artık sunucusuz: odayı kuran tablet maçı çalıştırır (`src/net/MatchHost.js`), oyuncular WebRTC + oda koduyla bağlanır (`src/net/PeerTransport.js`, PeerJS).
+> `server/`, `render.yaml`, Pi betikleri kaldırıldı. 1v1/2v2/3v3 ve iPad dokunmatik çubuk eklendi. Ayrıntı: `docs/ARCHITECTURE.md`, `TABLET_ODA_KURULUM.md`.
+> Grafik işi için sınırlar aynı: `src/visuals`, `src/styles`, HTML. Fizik ve ağ dosyalarına dokunma.
+
 # GEMINI DEVIR PROMPTU — ROCKET ARENA 3D (2026-10-08)
 
 ROLUN

@@ -1,47 +1,70 @@
 <!doctype html>
 <html lang="tr">
-<head><meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/><meta name="theme-color" content="#061320"/><title>Rocket Arena 3D — ONLINE 1v1</title></head>
+<head><meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/><meta name="theme-color" content="#061320"/><meta name="apple-mobile-web-app-capable" content="yes"/><meta name="mobile-web-app-capable" content="yes"/><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/><meta name="apple-mobile-web-app-title" content="Rocket Arena"/>
+  <title>Rocket Arena 3D — ONLINE</title></head>
 <body>
   <canvas id="game-canvas" aria-label="Çevrimiçi Rocket Arena oyun sahası"></canvas>
   <div id="online-ui">
     <header id="online-hud" class="hud hidden">
-      <span class="hud-brand">ROCKET <b>ARENA</b> <span>ONLINE</span></span>
-      <div class="scoreboard"><span class="score score-blue" id="online-blue">0</span><div class="score-clock"><span id="online-clock">5:00</span><small id="online-period">1v1 ONLINE</small></div><span class="score score-orange" id="online-orange">0</span></div>
+      <span class="hud-brand">ROCKET <b>ARENA</b> <span id="online-room-tag">ONLINE</span></span>
+      <div class="scoreboard"><span class="score score-blue" id="online-blue">0</span><div class="score-clock"><span id="online-clock">5:00</span><small id="online-period">ONLINE</small></div><span class="score score-orange" id="online-orange">0</span></div>
       <button class="hud-pause" type="button" id="online-leave">ÇIK</button>
     </header>
     <div id="online-boost" class="boost-widget hidden"><span class="boost-caption">BOOST</span><strong id="online-boost-number">0</strong><div class="boost-track"><div id="online-boost-fill" class="boost-fill"></div></div></div>
     <div id="online-camera" class="camera-label hidden">BALL CAM <strong>ON</strong></div>
-    <button type="button" id="online-rematch" class="btn btn-primary hidden" style="position:absolute;top:56%;left:50%;transform:translateX(-50%);z-index:12;white-space:nowrap">TEKRAR MAÇ →</button>
+    <button type="button" id="online-rematch" class="btn btn-primary hidden" style="position:absolute;top:56%;left:50%;transform:translateX(-50%);z-index:30;white-space:nowrap">TEKRAR MAÇ →</button>
     <div id="online-toast" class="center-message hidden" role="status"></div>
     <div id="online-panel" class="overlay menu-overlay">
       <div class="menu-shell">
-        <div class="eyebrow"><span class="signal"></span> RASPBERRY PI · ONLINE ARENA</div>
+        <div class="eyebrow"><span class="signal"></span> ONLINE ARENA · SUNUCUSUZ</div>
         <h1>ROCKET<br/><em>ARENA</em><span>ONLINE</span></h1>
-        <p class="menu-sub">Arkadaşınla gerçek zamanlı 1v1. Aynı oda kodunu yazın.</p>
+        <p class="menu-sub">Biriniz tabletinde oda kurar, diğerleri 4 karakterlik kodu yazıp katılır. Boş yerlere bot geçer. Maç, odayı kuran tablette çalışır.</p>
         <div class="online-form">
           <label for="player-name">OYUNCU ADI</label>
           <input id="player-name" maxlength="24" value="Oyuncu" autocomplete="nickname"/>
-          <label for="server-url">ONLINE SUNUCU ADRESİ</label>
-          <input id="server-url" type="url" placeholder="https://rocket-arena-server.onrender.com" autocomplete="url" spellcheck="false" />
-          <small class="server-help">GitHub Pages için Render adresini buraya yaz. Pi kullanırken Cloudflare Tunnel adresini gir. Adres bu tarayıcıda saklanır.</small>
-          <label for="room-code">ODA KODU (İKİNİZ DE AYNI KODU GİRİN)</label>
-          <input id="room-code" maxlength="14" value="ARENA123" autocapitalize="characters" spellcheck="false"/>
-          <button id="online-join" class="btn btn-primary" type="button">ODAYA GİR <span>→</span></button>
-          <p id="online-status" role="status">Sunucuya bağlanmak için odaya gir.</p>
+          <span class="online-label" id="room-size-label">ODA BOYUTU</span>
+          <div id="room-size" class="team-size" role="radiogroup" aria-labelledby="room-size-label">
+            <button type="button" role="radio" data-team-size="1" aria-checked="true">1V1</button>
+            <button type="button" role="radio" data-team-size="2" aria-checked="false">2V2</button>
+            <button type="button" role="radio" data-team-size="3" aria-checked="false">3V3</button>
+          </div>
+          <button id="room-create" class="btn btn-primary" type="button"><b id="room-create-label">1V1 ODA KUR</b> <span>＋</span></button>
+          <div class="online-or" aria-hidden="true">ya da arkadaşının odasına katıl</div>
+          <label for="room-code">ODA KODU</label>
+          <div class="join-row">
+            <input id="room-code" maxlength="4" placeholder="••••" autocapitalize="characters" autocomplete="off" autocorrect="off" spellcheck="false" enterkeyhint="go" aria-describedby="online-status"/>
+            <button id="online-join" class="btn btn-secondary" type="button">ODAYA KATIL <span>→</span></button>
+          </div>
+          <p id="online-status" role="status" aria-live="polite">Oda kur ya da arkadaşının verdiği kodu yaz.</p>
           <a class="online-back" href="./">← Tek oyunculu oyuna dön</a>
         </div>
       </div>
-      <div class="menu-side"><div class="big-number">1<span>VS1</span></div><span>LIVE<br/>MATCH</span></div>
+      <div class="menu-side"><div class="big-number">3<span>VS3</span></div><span>TABLETTEN<br/>ODA</span></div>
     </div>
+    <section id="room-card" class="overlay room-overlay hidden" aria-label="Oda">
+      <div class="room-card">
+        <p class="room-label" id="room-card-title">ODA KODUN</p>
+        <div id="room-code-display" class="room-code" role="img"></div>
+        <p id="room-format" class="room-format">1V1</p>
+        <div id="room-roster" class="room-roster" aria-label="Takımlar"></div>
+        <p id="room-help" class="room-help">Arkadaşların bu kodu yazsın. Boş yerlere bot geçer; maçı istediğin an başlatabilirsin. Maç bu tablette çalışacak, ekran açık kalsın.</p>
+        <p id="room-card-status" class="room-status" role="status" aria-live="polite">Oyuncular bekleniyor…</p>
+        <button id="room-start" class="btn btn-primary" type="button">MAÇI BAŞLAT <span>→</span></button>
+        <button id="room-share" class="btn btn-secondary" type="button">DAVET LİNKİNİ PAYLAŞ <span>↗</span></button>
+        <button id="room-close" class="btn btn-quiet" type="button">ODAYI KAPAT</button>
+      </div>
+    </section>
     <button id="touch-toggle" class="touch-toggle hidden" type="button" aria-label="Dokunmatik oyun tuşlarını gizle" aria-pressed="true">🎮 TUŞLARI GİZLE</button>
     <div id="touch-controls" class="touch-controls hidden" aria-label="Dokunmatik oyun kontrolleri">
-      <div class="touch-left">
-        <div class="touch-pair"><button type="button" tabindex="-1" data-touch-action="steerLeft" aria-label="Sola dön">◀</button><button type="button" tabindex="-1" data-touch-action="steerRight" aria-label="Sağa dön">▶</button></div>
-        <div class="touch-pair"><button type="button" tabindex="-1" data-touch-action="reverse" aria-label="Geri git">GERİ</button><button type="button" tabindex="-1" data-touch-action="throttle" aria-label="Gaz ver" class="touch-go">GAZ</button></div>
+      <div class="touch-stick" data-touch-stick aria-label="Sürüş çubuğu: yukarı gaz, aşağı geri, sağa ve sola dön; havada burnu eğer">
+        <div class="stick-base"><div class="stick-knob"></div></div>
+        <span class="stick-hint">BAŞPARMAĞINLA SÜR</span>
       </div>
       <div class="touch-right">
-        <div class="touch-pair"><button type="button" tabindex="-1" data-touch-action="ballCam" aria-label="Top kamerasını değiştir" class="touch-small">KAMERA</button><button type="button" tabindex="-1" data-touch-action="handbrake" aria-label="Drift yap" class="touch-small">DRIFT</button></div>
-        <div class="touch-pair"><button type="button" tabindex="-1" data-touch-action="jump" aria-label="Zıpla" class="touch-jump">ZIPLA</button><button type="button" tabindex="-1" data-touch-action="boost" aria-label="Nitro kullan" class="touch-boost">BOOST</button></div>
+        <button type="button" tabindex="-1" data-touch-action="ballCam" aria-label="Top kamerasını aç veya kapat" class="touch-small touch-cam">KAMERA</button>
+        <button type="button" tabindex="-1" data-touch-action="handbrake" aria-label="Drift; havada döndürme" class="touch-drift">DRIFT</button>
+        <button type="button" tabindex="-1" data-touch-action="jump" aria-label="Zıpla; havada tekrar bas: takla" class="touch-jump">ZIPLA</button>
+        <button type="button" tabindex="-1" data-touch-action="boost" aria-label="Nitro" class="touch-boost">BOOST</button>
       </div>
     </div>
     <div id="online-controls" class="control-strip"><span><b>WASD</b> SÜR</span><span><b>SPACE</b> ZIPLA</span><span><b>SHIFT</b> BOOST</span><span><b>CTRL</b> DRIFT</span><span><b>C</b> TOP KAMERASI</span><span><b>ESC</b> SERBEST</span></div>

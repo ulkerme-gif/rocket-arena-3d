@@ -1,4 +1,7 @@
-/** Server-side input protocol and validation; never accept positions/velocities from clients. */
+/**
+ * Host-side input protocol and validation (formerly server/protocol.js).
+ * The host tablet never accepts positions or velocities from a guest, only controls.
+ */
 const AXES = ['throttle', 'steer', 'pitch', 'yaw', 'roll'];
 const BUTTONS = ['jump', 'boost', 'handbrake'];
 
@@ -18,19 +21,14 @@ export function cleanInput(data) {
   for (const k of BUTTONS) {
     out[k] = data[k] === true;
   }
-  
-  // Sequence and timestamp validation
+
   const seq = data.sequence;
   out.sequence = Number.isSafeInteger(seq) && seq > 0 ? seq : null;
-  
+
   const ts = data.timestamp;
   out.timestamp = Number.isSafeInteger(ts) && ts >= 0 ? ts : null;
-  
-  return out;
-}
 
-export function cleanCode(code) {
-  return typeof code === 'string' && /^[A-Za-z0-9_-]{3,14}$/.test(code) ? code.toUpperCase() : null;
+  return out;
 }
 
 export function cleanName(name) {
@@ -38,10 +36,13 @@ export function cleanName(name) {
   return name.replace(/[<>\x00-\x1f]/g, '').trim().slice(0, 24) || 'Oyuncu';
 }
 
-export function message(data) {
+/** Accepts an already-decoded object (PeerJS JSON channel) or a JSON string. */
+export function asPacket(data) {
+  if (data && typeof data === 'object' && !Array.isArray(data)) return data;
+  if (typeof data !== 'string' || data.length > 4096) return null;
   try {
-    if (typeof data === 'string') return JSON.parse(data);
-    return JSON.parse(data.toString('utf8'));
+    const parsed = JSON.parse(data);
+    return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : null;
   } catch {
     return null;
   }

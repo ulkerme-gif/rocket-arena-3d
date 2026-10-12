@@ -129,9 +129,38 @@ export class BotController {
     return v0 * tAcc + 0.5 * a * tAcc * tAcc + vmax * (t - tAcc);
   }
 
+  /**
+   * 2v2 / 3v3 rotation: 0 = closest to the ball on this team (attacks),
+   * 1 = support, 2+ = last back. Humans count as teammates too.
+   * The current attacker gets a 3 m bonus so roles do not flicker.
+   */
+  _teamRank(state, ctx) {
+    const mates = state.cars.filter((c) => c.team === this.team);
+    if (mates.length < 2) return 0;
+    const { bpos } = ctx;
+    const score = (c) => Math.hypot(c.position.x - bpos.x, c.position.z - bpos.z)
+      - (c.id === this.carId && this.plan?.mode === 'attack' ? 3 : 0);
+    const order = mates.map((c) => ({ id: c.id, d: score(c) }))
+      .sort((p, q) => p.d - q.d || (p.id < q.id ? -1 : 1));
+    return order.findIndex((x) => x.id === this.carId);
+  }
+
+  _supportPlan(ctx, rank) {
+    const { bpos, ownSign, A } = ctx;
+    const b = A.halfLength;
+    const back = rank === 1 ? 0.45 : 0.75;
+    const target = new Vector3(bpos.x * (rank === 1 ? 0.5 : 0.2), 0, bpos.z + (ownSign * b - bpos.z) * back);
+    target.x = clamp(target.x, -A.halfWidth + 6, A.halfWidth - 6);
+    target.z = clamp(target.z, -b + 6, b - 6);
+    return { mode: 'support', target, boost: false, arrive: true };
+  }
+
   _decide(ctx, state) {
     const { pos, bpos, ownSign, A } = ctx;
     const b = A.halfLength;
+    const rank = this._teamRank(state, ctx);
+    // A teammate is going for it: cover instead of double-committing (unless the ball is right here).
+    if (rank > 0 && Math.hypot(bpos.x - pos.x, bpos.z - pos.z) > 7) return this._supportPlan(ctx, rank);
     if (state.isKickoff) {
       // Aim slightly behind the ball on the line to the opponent goal (off-centre hit).
       const dir = new Vector3(0, 0, -ownSign * b).sub(bpos).setY(0).normalize();

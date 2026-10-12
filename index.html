@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <meta name="theme-color" content="#07111e" />
+  <meta name="apple-mobile-web-app-capable" content="yes"/><meta name="mobile-web-app-capable" content="yes"/><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/><meta name="apple-mobile-web-app-title" content="Rocket Arena"/>
   <title>Rocket Arena 3D — Car Soccer</title>
 </head>
 <body>
@@ -28,8 +29,13 @@
         <h1>ROCKET<br/><em>ARENA</em><span>3D</span></h1>
         <p class="menu-sub">Roket gücü. Büyük goller. Gerçek 3D araç fiziği.</p>
         <div class="menu-actions">
-          <button id="play-match" type="button" class="btn btn-primary">1V1 · BOTA KARŞI <span>→</span></button>
-          <a href="./online.html" class="btn btn-secondary">ONLINE 1V1 · ARKADAŞLA <span>🌐</span></a>
+          <div id="team-size" class="team-size" role="radiogroup" aria-label="Takım boyutu">
+            <button type="button" role="radio" data-team-size="1" aria-checked="true">1V1</button>
+            <button type="button" role="radio" data-team-size="2" aria-checked="false">2V2</button>
+            <button type="button" role="radio" data-team-size="3" aria-checked="false">3V3</button>
+          </div>
+          <button id="play-match" type="button" class="btn btn-primary"><b id="play-match-label">1V1 · BOTLARA KARŞI</b> <span>→</span></button>
+          <a href="./online.html" class="btn btn-secondary">ONLINE · ARKADAŞLARLA <span>🌐</span></a>
           <button id="play-training" type="button" class="btn btn-secondary">SERBEST ANTRENMAN <span>↗</span></button>
           <button id="open-settings" type="button" class="btn btn-quiet">⚙ OYUN AYARLARI</button>
         </div>
@@ -56,13 +62,19 @@
     </section>
     <button id="touch-toggle" class="touch-toggle hidden" type="button" aria-label="Dokunmatik oyun tuşlarını gizle" aria-pressed="true">🎮 TUŞLARI GİZLE</button>
     <div id="touch-controls" class="touch-controls hidden" aria-label="Dokunmatik oyun kontrolleri">
-      <div class="touch-left">
-        <div class="touch-pair"><button type="button" tabindex="-1" data-touch-action="steerLeft" aria-label="Sola dön">◀</button><button type="button" tabindex="-1" data-touch-action="steerRight" aria-label="Sağa dön">▶</button></div>
-        <div class="touch-pair"><button type="button" tabindex="-1" data-touch-action="reverse" aria-label="Geri git">GERİ</button><button type="button" tabindex="-1" data-touch-action="throttle" aria-label="Gaz ver" class="touch-go">GAZ</button></div>
+      <div class="touch-stick" data-touch-stick aria-label="Sürüş çubuğu: yukarı gaz, aşağı geri, sağa ve sola dön; havada burnu eğer">
+        <div class="stick-base"><div class="stick-knob"></div></div>
+        <span class="stick-hint">BAŞPARMAĞINLA SÜR</span>
       </div>
       <div class="touch-right">
-        <div class="touch-pair"><button type="button" tabindex="-1" data-touch-action="ballCam" aria-label="Top kamerasını değiştir" class="touch-small">KAMERA</button><button type="button" tabindex="-1" data-touch-action="handbrake" aria-label="Drift yap" class="touch-small">DRIFT</button></div>
-        <div class="touch-pair"><button type="button" tabindex="-1" data-touch-action="jump" aria-label="Zıpla" class="touch-jump">ZIPLA</button><button type="button" tabindex="-1" data-touch-action="boost" aria-label="Nitro kullan" class="touch-boost">BOOST</button></div>
+        <button type="button" tabindex="-1" data-touch-action="ballCam" aria-label="Top kamerasını aç veya kapat" class="touch-small touch-cam">KAMERA</button>
+        <button type="button" tabindex="-1" data-touch-action="handbrake" aria-label="Drift; havada döndürme" class="touch-drift">DRIFT</button>
+        <button type="button" tabindex="-1" data-touch-action="jump" aria-label="Zıpla; havada tekrar bas: takla" class="touch-jump">ZIPLA</button>
+        <button type="button" tabindex="-1" data-touch-action="boost" aria-label="Nitro" class="touch-boost">BOOST</button>
+      </div>
+      <div class="touch-training" aria-label="Antrenman">
+        <button type="button" tabindex="-1" data-touch-action="reset" aria-label="Arabayı başlangıca al" class="touch-small">ARABA ↺</button>
+        <button type="button" tabindex="-1" data-touch-action="resetBall" aria-label="Topu ortaya al" class="touch-small">TOP ↺</button>
       </div>
     </div>
     <div id="control-strip" class="control-strip"><span><b>WASD</b> SÜR</span><span><b>SPACE</b> ZIPLA / FLIP</span><span><b>SHIFT</b> BOOST</span><span><b>CTRL</b> DRIFT</span><span><b>C</b> TOP KAMERASI</span><span><b>ESC</b> DURAKLAT</span></div>

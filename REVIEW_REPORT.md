@@ -1,3 +1,5 @@
+> Tarihsel rapor (2026-10-08). `server/` ve WebSocket sunucusu 2026-10-12 itibarıyla kaldırıldı; güncel durum: `docs/STATUS_AND_TESTS.md`.
+
 # Rocket Arena 3D — Gemini ZIP teknik incelemesi (2026-10-08)
 
 ## Başlangıç

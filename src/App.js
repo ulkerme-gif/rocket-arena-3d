@@ -6,6 +6,7 @@ import { CameraRig } from './camera/CameraRig.js';
 import { GameLoop } from './core/GameLoop.js';
 import { MODE, PHASE, TEAM } from './game/constants.js';
 import { Simulation } from './game/Simulation.js';
+import { formatLabel, normalizeTeamSize, TEAM_SIZES } from './game/teams.js';
 import { InputManager } from './input/InputManager.js';
 import { Settings } from './ui/Settings.js';
 import { ArenaView } from './visuals/ArenaView.js';
@@ -21,6 +22,7 @@ const _vel = new THREE.Vector3();
 const _ballPos = new THREE.Vector3();
 const _ballQuat = new THREE.Quaternion();
 const _focus = new THREE.Vector3(0, 2, 0);
+const TEAM_SIZE_KEY = 'rocket-arena-team-size';
 
 /** Browser-facing composition root. The simulation remains pure and headless-testable. */
 export class App {
@@ -35,6 +37,8 @@ export class App {
     this.sim = null;
     this.view = null;
     this.mode = null;
+    this.teamSize = 1;
+    try { this.teamSize = normalizeTeamSize(localStorage.getItem(TEAM_SIZE_KEY)); } catch { /* private mode */ }
     this.paused = false;
     this.settingsFrom = 'menu';
     this.showDebug = false;
@@ -66,6 +70,10 @@ export class App {
 
   _bindUI() {
     el('play-match').addEventListener('click', () => this.startGame(MODE.MATCH));
+    for (const button of el('team-size').querySelectorAll('[data-team-size]')) {
+      button.addEventListener('click', () => this.setTeamSize(button.dataset.teamSize));
+    }
+    this.setTeamSize(this.teamSize);
     el('play-training').addEventListener('click', () => this.startGame(MODE.TRAINING));
     el('open-settings').addEventListener('click', () => this.openSettings('menu'));
     el('pause-button').addEventListener('click', () => this.pause());
@@ -85,6 +93,18 @@ export class App {
       this.settings.set('ballCamDefault', e.target.checked);
       this.camera.setBallCam(e.target.checked);
     });
+  }
+
+  /** 1v1 / 2v2 / 3v3 against bots; remembered for next time. */
+  setTeamSize(value) {
+    this.teamSize = normalizeTeamSize(value);
+    try { localStorage.setItem(TEAM_SIZE_KEY, String(this.teamSize)); } catch { /* private mode */ }
+    for (const button of el('team-size').querySelectorAll('[data-team-size]')) {
+      const on = Number(button.dataset.teamSize) === this.teamSize;
+      button.setAttribute('aria-checked', String(on));
+      button.classList.toggle('active', on);
+    }
+    el('play-match-label').textContent = `${formatLabel(this.teamSize)} · BOTLARA KARŞI`;
   }
 
   _renderSettings() {
@@ -111,17 +131,23 @@ export class App {
     this._clearSession();
     this.mode = mode;
     this.matchEnded = false;
+    const n = TEAM_SIZES.includes(this.teamSize) ? this.teamSize : 1;
+    // You drive blue 'player'; bots take every other seat (teammates and opponents).
+    const bots = mode === MODE.MATCH ? [
+      ...Array.from({ length: n - 1 }, (_, i) => ({ id: `blue-${i + 2}`, team: TEAM.BLUE, kind: 'bot' })),
+      ...Array.from({ length: n }, (_, i) => ({ id: `orange-${i + 1}`, team: TEAM.ORANGE, kind: 'bot' })),
+    ] : [];
     this.sim = new Simulation({
       RAPIER: this.RAPIER,
       config: CONFIG,
       mode,
-      players: mode === MODE.TRAINING
-        ? [{ id: 'player', team: TEAM.BLUE, kind: 'human' }]
-        : [{ id: 'player', team: TEAM.BLUE, kind: 'human' }, { id: 'opponent', team: TEAM.ORANGE, kind: 'bot' }],
+      players: [{ id: 'player', team: TEAM.BLUE, kind: 'human' }, ...bots],
     });
-    if (mode === MODE.MATCH) {
-      this.sim.attachBot('opponent', new BotController({ carId: 'opponent', team: TEAM.ORANGE, config: CONFIG.bot }));
+    for (const bot of bots) {
+      this.sim.attachBot(bot.id, new BotController({ carId: bot.id, team: bot.team, config: CONFIG.bot }));
     }
+    this.matchLabel = mode === MODE.MATCH ? formatLabel(n) : 'FREE PLAY';
+    document.body.classList.toggle('mode-training', mode === MODE.TRAINING);
     this.view = new GameView(this.renderer, this.sim);
     this.unsubs.push(
       this.sim.events.on('goal', (e) => this._announce(`${e.team === TEAM.BLUE ? 'MAVİ' : 'TURUNCU'} GOL!`, 2500)),
@@ -156,6 +182,7 @@ export class App {
 
   returnToMenu() {
     this._clearSession();
+    document.body.classList.remove('mode-training');
     this.paused = false;
     this.loop.setPaused(false);
     this.camera.snap();
@@ -257,7 +284,7 @@ export class App {
     el('score-blue').textContent = s.score.blue;
     el('score-orange').textContent = s.score.orange;
     el('clock').textContent = this.mode === MODE.TRAINING ? '∞' : s.isOvertime ? `+${fmtTime(s.overtimeElapsed)}` : fmtTime(s.timeRemaining);
-    el('period').textContent = this.mode === MODE.TRAINING ? 'FREE PLAY' : s.isOvertime ? 'OVERTIME' : '1V1';
+    el('period').textContent = this.mode === MODE.TRAINING ? 'FREE PLAY' : s.isOvertime ? 'OVERTIME' : this.matchLabel;
     const me = s.cars.find((c) => c.id === 'player');
     const boost = Math.round(me?.boost ?? 0);
     el('boost-number').textContent = boost;
@@ -271,7 +298,7 @@ export class App {
     }
     show('debug-panel', this.showDebug);
     if (this.showDebug) {
-      const bot = this.sim.bots.get('opponent');
+      const bot = this.sim.bots.values().next().value;
       el('debug-panel').textContent = `FPS ${this.loop.stats.fps} · TICK ${s.tick} · BOT ${bot?.debug?.mode ?? '-'} · BALL ${s.ball.position.x.toFixed(1)},${s.ball.position.y.toFixed(1)},${s.ball.position.z.toFixed(1)}`;
     }
   }
