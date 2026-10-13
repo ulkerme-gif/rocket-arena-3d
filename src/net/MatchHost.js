@@ -7,6 +7,7 @@ import { ZERO_INPUT, cleanInput, cleanName, asPacket } from './protocol.js';
 import { compactState, padLayoutOf } from './snapshot.js';
 import { PROTOCOL_VERSION } from './roomCode.js';
 import { cleanSkin, isDefaultSkin } from '../visuals/skins.js';
+import { MUTATOR, normalizeMutator } from '../game/mutators.js';
 
 const defaultNow = () => (typeof performance !== 'undefined' ? performance.now() : Date.now());
 
@@ -28,6 +29,7 @@ export class MatchHost {
     config = CONFIG,
     roomCode = '',
     teamSize = 1,
+    mutator = MUTATOR.CLASSIC,
     snapshotEvery = null,
     inputTimeoutMs = 300,
     maxMessagesPerSecond = 150,
@@ -39,6 +41,7 @@ export class MatchHost {
     this.config = config;
     this.roomCode = roomCode;
     this.teamSize = normalizeTeamSize(teamSize);
+    this.mutator = normalizeMutator(mutator);
     this.seats = seatList(this.teamSize);
     // 60 snapshots/s (40/s in 3v3, where the host feeds five guests) keep guests smooth on Wi-Fi.
     this.snapshotEvery = Math.max(1, snapshotEvery ?? (this.teamSize === 3 ? 3 : 2));
@@ -109,14 +112,14 @@ export class MatchHost {
     if (this.sim) {
       // Mid-match: take the wheel from the bot in this seat.
       this.sim.bots.delete(player.id);
-      this._send(player, { type: 'roomStatus', status: 'playing', padLayout: this.padLayout });
+      this._send(player, { type: 'roomStatus', status: 'playing', padLayout: this.padLayout, mutator: this.mutator });
       this._send(player, { type: 'snapshot', state: compactState(this.sim.getState(), 0) });
       this._notice(`${player.name} katıldı, botun yerine geçti.`, player);
       this._broadcastRoster();
     } else if (this.players.length === this.capacity) {
       this.startMatch(); // room full: no need to wait for the host
     } else {
-      this._send(player, { type: 'roomStatus', status: 'waiting' });
+      this._send(player, { type: 'roomStatus', status: 'waiting', mutator: this.mutator });
       this._broadcastRoster();
     }
     return player;
@@ -152,6 +155,7 @@ export class MatchHost {
       RAPIER: this.RAPIER,
       config: this.config,
       mode: MODE.MATCH,
+      mutator: this.mutator,
       random: this.random,
       players: this.seats.map((s) => ({ id: s.id, team: s.team, kind: humanSeats.has(s.id) ? 'human' : 'bot' })),
     });
@@ -163,7 +167,7 @@ export class MatchHost {
     this.sim.start();
     const initial = this.sim.getState();
     this.padLayout = padLayoutOf(initial);
-    this.broadcast({ type: 'roomStatus', status: 'playing', padLayout: this.padLayout });
+    this.broadcast({ type: 'roomStatus', status: 'playing', padLayout: this.padLayout, mutator: this.mutator });
     this._broadcastRoster();
     const base = compactState(initial, 0);
     for (const p of this.players) this._send(p, { type: 'snapshot', state: base });

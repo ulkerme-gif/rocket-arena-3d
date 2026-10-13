@@ -376,6 +376,7 @@ export class CarController {
       s.timeSinceJump = 0;
       s.airTimeSinceJump = 0;
       this._addVelocity(_c.copy(this.up).multiplyScalar(J.impulse));
+      this._addAngularVelocity(_c.copy(this.right).multiplyScalar(J.takeoffPitch));
       this._emit('jump');
       return;
     }

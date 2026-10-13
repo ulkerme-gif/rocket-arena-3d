@@ -18,6 +18,7 @@ import { HostedRoom, describePeerError, joinHostedRoom, loadPeerClass } from './
 import { describeNetwork, probeBroker, probeIce } from './net/networkCheck.js';
 import { PROTOCOL_VERSION, codeFromLocation, inviteLink, normalizeRoomCode, roomCodeProblem } from './net/roomCode.js';
 import { formatLabel, normalizeTeamSize } from './game/teams.js';
+import { mutatorLabel, normalizeMutator } from './game/mutators.js';
 import { NameTags } from './visuals/NameTags.js';
 import { loadSkin } from './visuals/skins.js';
 
@@ -59,6 +60,7 @@ class OnlineApp {
     this.role = null;        // 'host' | 'guest' | null
     this.session = null;     // host: { room, match, local } · guest: { connection, code }
     this.teamSize = 1;       // size picked in the lobby (host) / reported by the room (guest)
+    this.mutator = normalizeMutator(el('room-mutator').value);
     this.roomCode = null; this.roster = null;
     this.sessionToken = 0;   // invalidates late async results after leaving
     this.busy = false;
@@ -77,6 +79,11 @@ class OnlineApp {
       button.addEventListener('click', () => this.setLobbySize(button.dataset.teamSize));
     }
     this.setLobbySize(savedSize);
+    el('room-mutator').addEventListener('change', (event) => {
+      this.mutator = normalizeMutator(event.target.value);
+      event.target.value = this.mutator;
+      el('room-mutator-name').textContent = mutatorLabel(this.mutator);
+    });
     const skin = loadSkin();
     el('skin-chip').style.setProperty('--chip', skin.base === 'team' ? 'linear-gradient(90deg,#1f74e0 50%,#f0661a 50%)' : skin.base);
     const invited = codeFromLocation();
@@ -135,7 +142,7 @@ class OnlineApp {
 
   setBusy(busy) {
     this.busy = busy;
-    for (const id of ['room-create', 'online-join', 'room-code', 'player-name', 'network-test']) el(id).disabled = busy;
+    for (const id of ['room-create', 'online-join', 'room-code', 'player-name', 'room-mutator', 'network-test']) el(id).disabled = busy;
     for (const button of el('room-size').querySelectorAll('button')) button.disabled = busy;
   }
 
@@ -159,6 +166,7 @@ class OnlineApp {
   async createRoom() {
     if (this.busy) return;
     const name = this.saveName();
+    this.mutator = normalizeMutator(el('room-mutator').value);
     this.leave({ silent: true });
     this.keepScreenOn(); // still inside the tap: Safari only grants the wake lock here
     const token = ++this.sessionToken;
@@ -171,7 +179,7 @@ class OnlineApp {
       room = await HostedRoom.open({ Peer });
       if (token !== this.sessionToken) { room.close(); return; }
       const local = { send: msg => queueMicrotask(() => { if (this.session?.local === local) this.handleMessage(msg); }) };
-      const match = new MatchHost({ RAPIER, roomCode: room.code, teamSize: this.teamSize,
+      const match = new MatchHost({ RAPIER, roomCode: room.code, teamSize: this.teamSize, mutator: this.mutator,
         onReject: link => setTimeout(() => link.close('rejected'), 400) });
       this.role = 'host';
       this.session = { room, match, local };
@@ -207,6 +215,7 @@ class OnlineApp {
   showRoomCard() {
     const code = this.roomCode ?? '';
     const host = this.role === 'host';
+    el('room-mutator-name').textContent = mutatorLabel(this.mutator);
     const display = el('room-code-display');
     display.replaceChildren(...[...code].map(ch => {
       const tile = document.createElement('span');
@@ -336,6 +345,9 @@ class OnlineApp {
     } else if (msg.type === 'notice') {
       if (typeof msg.text === 'string') this.toast(msg.text.slice(0, 80), 2600);
     } else if (msg.type === 'roomStatus') {
+      this.mutator = normalizeMutator(msg.mutator ?? this.mutator);
+      el('room-mutator').value = this.mutator;
+      el('room-mutator-name').textContent = mutatorLabel(this.mutator);
       const playing = msg.status === 'playing';
       this.ready = playing;
       this.disposeView();

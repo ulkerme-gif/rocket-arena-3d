@@ -30,6 +30,13 @@
             <button type="button" role="radio" data-team-size="2" aria-checked="false">2V2</button>
             <button type="button" role="radio" data-team-size="3" aria-checked="false">3V3</button>
           </div>
+          <label class="online-label" for="room-mutator">OYUN MODU</label>
+          <select id="room-mutator" class="online-select">
+            <option value="classic">Klasik</option>
+            <option value="low-gravity">Düşük yerçekimi</option>
+            <option value="zero-gravity">Yerçekimsiz</option>
+            <option value="infinite-boost">Sınırsız boost</option>
+          </select>
           <button id="room-create" class="btn btn-primary" type="button"><b id="room-create-label">1V1 ODA KUR</b> <span>＋</span></button>
           <div class="online-or" aria-hidden="true">ya da arkadaşının odasına katıl</div>
           <label for="room-code">ODA KODU</label>
@@ -48,6 +55,7 @@
       <div class="room-card">
         <p class="room-label" id="room-card-title">ODA KODUN</p>
         <div id="room-code-display" class="room-code" role="img"></div>
+        <p id="room-mutator-name" class="room-mutator">KLASİK</p>
         <p id="room-format" class="room-format">1V1</p>
         <div id="room-roster" class="room-roster" aria-label="Takımlar"></div>
         <p id="room-help" class="room-help">Arkadaşların bu kodu yazsın. Boş yerlere bot geçer; maçı istediğin an başlatabilirsin. Maç bu tablette çalışacak, ekran açık kalsın.</p>

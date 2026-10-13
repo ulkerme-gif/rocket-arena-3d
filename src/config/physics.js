@@ -81,6 +81,7 @@ export const PHYSICS = {
 
     jump: {
       impulse: 2.9167,         // m/s instant
+      takeoffPitch: 2.8,       // rad/s nose-up angular impulse; front wheels lift first
       holdAccel: 14.583,       // m/s² while held
       minHoldTime: 0.025,
       maxHoldTime: 0.2,
@@ -141,7 +142,7 @@ export const PHYSICS = {
     startAmount: 33.3,
     consumptionPerSecond: 33.3,
     groundAccel: 9.9167,
-    airAccel: 10.583,
+    airAccel: 15,
     minActiveTime: 0.1,
   },
 

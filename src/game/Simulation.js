@@ -10,6 +10,7 @@ import { buildLayout, headingTowards } from '../arena/layout.js';
 import { BoostPadSystem } from './BoostPadSystem.js';
 import { GameRules } from './GameRules.js';
 import { MODE, TEAM } from './constants.js';
+import { configForMutator, MUTATOR, normalizeMutator } from './mutators.js';
 
 const v3 = (v) => ({ x: v.x, y: v.y, z: v.z });
 const q4 = (q) => ({ x: q.x, y: q.y, z: q.z, w: q.w });
@@ -24,11 +25,14 @@ export class Simulation {
    * @param {object} o
    * @param {object} o.RAPIER initialized Rapier module
    * @param {object} [o.config] defaults to CONFIG
-   * @param {'match'|'training'|'demo'} [o.mode]
+  * @param {'match'|'training'|'demo'} [o.mode]
+  * @param {string} [o.mutator]
    * @param {Array<{id:string, team:'blue'|'orange', kind?:'human'|'bot'}>} [o.players]
    * @param {() => number} [o.random] RNG used for kickoff spots
    */
-  constructor({ RAPIER, config = CONFIG, mode = MODE.MATCH, players, random = Math.random }) {
+  constructor({ RAPIER, config = CONFIG, mode = MODE.MATCH, mutator = MUTATOR.CLASSIC, players, random = Math.random }) {
+    this.mutator = normalizeMutator(mutator);
+    config = configForMutator(config, this.mutator);
     this.config = config;
     this.mode = mode;
     this.random = random;
@@ -62,7 +66,7 @@ export class Simulation {
     // One tick so Rapier builds its scene-query structures (raycasts need them).
     this.physics.step();
 
-    if (mode === MODE.TRAINING && config.rules.training.unlimitedBoost) {
+    if (config.mutatorSettings.infiniteBoost || (mode === MODE.TRAINING && config.rules.training.unlimitedBoost)) {
       for (const car of this.cars) car.unlimitedBoost = true;
     }
   }

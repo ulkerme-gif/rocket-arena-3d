@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { MatchHost } from '../src/net/MatchHost.js';
 import { PROTOCOL_VERSION } from '../src/net/roomCode.js';
 import { expandState } from '../src/net/snapshot.js';
+import { CONFIG } from '../src/config/index.js';
 import { initRapier, seeded, C } from './helpers.js';
 
 /** A player handle whose inbox receives exactly what would cross the wire (JSON copies). */
@@ -17,12 +18,12 @@ function handle(name) {
   };
 }
 
-async function hostedRoom(teamSize = 1) {
+async function hostedRoom(teamSize = 1, mutator = 'classic') {
   const RAPIER = await initRapier();
   const clock = { t: 0 };
   const rejected = [];
   const match = new MatchHost({
-    RAPIER, roomCode: 'K7M2', teamSize, now: () => clock.t, random: seeded(3),
+    RAPIER, roomCode: 'K7M2', teamSize, mutator, now: () => clock.t, random: seeded(3),
     onReject: (h, detail) => rejected.push([h.name, detail]),
   });
   const host = handle('host');
@@ -92,6 +93,29 @@ test('3v3 room: players are balanced across teams, the host starts early and bot
   assert.equal(match.sim.cars.length, 6);
   assert.deepEqual([...match.sim.bots.keys()].sort(), ['blue-3', 'orange-3']);
   for (const g of guests) assert.equal(g.last('roomStatus').status, 'playing');
+  match.dispose();
+});
+
+test('host-selected mutator is applied to the shared match and reported to guests', async () => {
+  const { match, host } = await hostedRoom(2, 'zero-gravity');
+  assert.equal(host.last('roomStatus').mutator, 'zero-gravity');
+  const guest = handle('guest');
+  join(match, guest);
+  assert.equal(guest.last('roomStatus').mutator, 'zero-gravity');
+  match.handlePacket(host, { type: 'start' });
+  assert.equal(match.sim.mutator, 'zero-gravity');
+  assert.equal(match.sim.physics.gravity, 0);
+  assert.ok(match.sim.cars[0].boost > 0);
+  assert.equal(host.last('roomStatus').mutator, 'zero-gravity');
+  assert.equal(guest.last('roomStatus').mutator, 'zero-gravity');
+  match.dispose();
+});
+
+test('infinite-boost mutator keeps host-controlled cars fueled', async () => {
+  const { match, host } = await hostedRoom(1, 'infinite-boost');
+  match.handlePacket(host, { type: 'start' });
+  assert.ok(match.sim.cars.every((car) => car.unlimitedBoost));
+  assert.ok(match.sim.config.physics.boost.airAccel > CONFIG.physics.boost.airAccel);
   match.dispose();
 });
 

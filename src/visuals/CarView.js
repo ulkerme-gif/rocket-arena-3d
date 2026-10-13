@@ -62,9 +62,11 @@ export class CarView {
     this.bodyMat = bodyMat;
     const trimMat = new THREE.MeshStandardMaterial({ color: pal.trim, metalness: 0.5, roughness: 0.45 });
     const glassMat = new THREE.MeshStandardMaterial({ color: 0x0c1622, metalness: 0.9, roughness: 0.15 });
+    const windowMat = new THREE.MeshStandardMaterial({ color: 0x6cc9e8, metalness: 0.65, roughness: 0.18, emissive: 0x12303d, emissiveIntensity: 0.35 });
     this.accentMat = new THREE.MeshStandardMaterial({ color: pal.accent, emissive: pal.accent, emissiveIntensity: 1.2 });
     const lightMat = new THREE.MeshStandardMaterial({ color: 0xffffff, emissive: 0xfff2c8, emissiveIntensity: 2 });
     const tailMat = new THREE.MeshStandardMaterial({ color: 0xff2a3a, emissive: 0xff2a3a, emissiveIntensity: 1.6 });
+    const fenderMat = new THREE.MeshStandardMaterial({ color: pal.body, metalness: 0.55, roughness: 0.28 });
 
     const body = new THREE.Mesh(bodyGeometry(), bodyMat);
     const cabin = new THREE.Mesh(extrudeProfile(profile([[-0.34, 0.08], [-0.18, 0.25], [0.1, 0.26], [0.32, 0.075]]), 0.56, 0.02), glassMat);
@@ -73,10 +75,27 @@ export class CarView {
       m.position.set(x, y, z);
       return m;
     };
+    const windshield = box(0.42, 0.012, 0.22, windowMat, 0, 0.17, -0.255);
+    windshield.rotation.x = -0.62;
+    const rearGlass = box(0.38, 0.012, 0.16, windowMat, 0, 0.17, 0.205);
+    rearGlass.rotation.x = 0.62;
+    const fenderGeo = new THREE.TorusGeometry(0.16, 0.025, 6, 20, Math.PI);
+    fenderGeo.rotateY(Math.PI / 2);
+    const fenders = [];
+    for (const z of [-0.38, 0.4]) for (const side of [-1, 1]) {
+      const fender = new THREE.Mesh(fenderGeo, fenderMat);
+      fender.position.set(side * 0.39, -0.085, z);
+      fenders.push(fender);
+    }
     this.group.add(body, cabin,
+      windshield, rearGlass, ...fenders,
       box(0.86, 0.035, 0.16, trimMat, 0, 0.24, 0.52),
       box(0.035, 0.13, 0.06, trimMat, 0.28, 0.16, 0.52),
       box(0.035, 0.13, 0.06, trimMat, -0.28, 0.16, 0.52),
+      box(0.72, 0.07, 0.075, trimMat, 0, -0.09, -0.6),
+      box(0.72, 0.045, 0.08, trimMat, 0, -0.105, 0.61),
+      box(0.055, 0.055, 0.72, trimMat, 0.385, -0.105, 0),
+      box(0.055, 0.055, 0.72, trimMat, -0.385, -0.105, 0),
       box(0.04, 0.03, 0.92, this.accentMat, 0.405, -0.03, 0),
       box(0.04, 0.03, 0.92, this.accentMat, -0.405, -0.03, 0),
       box(0.16, 0.035, 0.02, lightMat, 0.24, -0.02, -0.66),
@@ -93,12 +112,20 @@ export class CarView {
     const rimGeo = new THREE.CylinderGeometry(0.095, 0.095, 0.125, 6).rotateZ(Math.PI / 2);
     const tireMat = new THREE.MeshStandardMaterial({ color: 0x15171b, roughness: 0.9 });
     const rimMat = new THREE.MeshStandardMaterial({ color: 0xc9d2dc, metalness: 0.8, roughness: 0.3 });
+    const spokeGeo = new THREE.BoxGeometry(0.022, 0.095, 0.018);
     this.wheels = car.wheels.map(() => {
       const steer = new THREE.Group();
       const spin = new THREE.Group();
       const tire = new THREE.Mesh(tireGeo, tireMat);
+      const rim = new THREE.Mesh(rimGeo, rimMat);
       tire.castShadow = true;
-      spin.add(tire, new THREE.Mesh(rimGeo, rimMat));
+      spin.add(tire, rim, new THREE.Mesh(new THREE.CylinderGeometry(0.043, 0.043, 0.135, 12).rotateZ(Math.PI / 2), trimMat));
+      for (const side of [-1, 1]) for (let i = 0; i < 6; i++) {
+        const spoke = new THREE.Mesh(spokeGeo, rimMat);
+        spoke.position.set(side * 0.067, 0.045, 0);
+        spoke.rotation.x = (i * Math.PI) / 3;
+        spin.add(spoke);
+      }
       steer.add(spin);
       this.group.add(steer);
       return { steer, spin };

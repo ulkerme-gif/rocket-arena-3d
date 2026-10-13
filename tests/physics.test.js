@@ -83,6 +83,30 @@ test('single jump reaches a RL-like height and lands', async () => {
   sim.dispose();
 });
 
+test('jump pitches the nose up so the front axle rises ahead of the rear', async () => {
+  const { sim, car } = await carSim();
+  steps(sim, 0.5, ctl({}));
+  steps(sim, sim.dt, ctl({ jump: true }));
+  const frontY = car.wheels.slice(0, 2).reduce((sum, wheel) => sum + wheel.local.clone().applyQuaternion(car.quaternion).y, 0) / 2;
+  const rearY = car.wheels.slice(2).reduce((sum, wheel) => sum + wheel.local.clone().applyQuaternion(car.quaternion).y, 0) / 2;
+  assert.ok(car.forward.y > 0.015, `nose-up ${car.forward.y}`);
+  assert.ok(frontY > rearY + 0.02, `front axle ${frontY}, rear axle ${rearY}`);
+  sim.dispose();
+});
+
+test('air boost can overcome gravity with a moderate nose-up angle', async () => {
+  const { sim, car } = await carSim();
+  car.reset({ x: 0, y: 8, z: 0 }, 0, 100);
+  const halfAngle = Math.PI / 12;
+  car.body.setRotation({ x: Math.sin(halfAngle), y: 0, z: 0, w: Math.cos(halfAngle) }, true);
+  car._readBody();
+  car.snapInterpolation();
+  steps(sim, 0.5, ctl({ boost: true }));
+  assert.ok(car.velocity.y > 0, `vertical speed ${car.velocity.y}`);
+  assert.ok(car.state.isBoosting);
+  sim.dispose();
+});
+
 test('double jump goes higher than a single jump', async () => {
   const { sim, car } = await carSim();
   steps(sim, 0.5, ctl({}));
@@ -116,6 +140,19 @@ test('air roll spins the car around its forward axis', async () => {
   steps(sim, 0.3, ctl({ roll: 1 }));
   const w = car.angularVelocity.dot(car.forward);
   assert.ok(w > 3, `roll rate ${w}`);
+  sim.dispose();
+});
+
+test('jump, nose-up air control and boost sustain an aerial climb', async () => {
+  const { sim, car } = await carSim();
+  steps(sim, 0.5, ctl({}));
+  const startY = car.position.y;
+  steps(sim, 0.15, ctl({ jump: true }));
+  steps(sim, 0.24, ctl({ throttle: -1, pitch: -1 }));
+  steps(sim, 1, ctl({ boost: true }));
+  assert.ok(car.position.y - startY > 3, `climb ${car.position.y - startY}`);
+  assert.ok(car.forward.y > 0.3, `nose-up ${car.forward.y}`);
+  assert.ok(car.velocity.y > 2, `vertical speed ${car.velocity.y}`);
   sim.dispose();
 });
 
