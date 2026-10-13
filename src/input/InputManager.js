@@ -21,8 +21,15 @@ export class InputManager {
       : null;
     this._gameKeys = new Set(Object.values(controlsConfig.keyboard).flat());
     this._onDown = (e) => this._keyDown(e);
-    this._onUp = (e) => this.keys.delete(e.code);
-    this._onBlur = () => this.keys.clear();
+    this._onUp = (e) => {
+      this.keys.delete(e.code);
+      this.edges.delete(e.code);
+    };
+    this._onBlur = () => {
+      this.keys.clear();
+      this.edges.clear();
+      this.padPrev.clear();
+    };
     target.addEventListener('keydown', this._onDown);
     target.addEventListener('keyup', this._onUp);
     window.addEventListener('blur', this._onBlur);

@@ -5,6 +5,13 @@ import { BotController } from '../src/ai/BotController.js';
 import { CONFIG } from '../src/config/index.js';
 import { MODE } from '../src/game/constants.js';
 
+test('fair bot preset exists and keeps default bot pace human-like', () => {
+  assert.ok(CONFIG.bot.presets.fair, 'fair preset missing');
+  assert.equal(CONFIG.bot.difficulty, 'fair', 'default bot should be fair, not elite');
+  assert.ok(CONFIG.bot.presets.fair.maxThrottle < 1, 'fair bot should not match a perfectly tuned player throttle');
+  assert.ok(CONFIG.bot.presets.fair.aimNoise > 0, 'fair bot should miss occasionally instead of perfect aim');
+});
+
 test('bot vs idle opponent: the bot touches the ball and scores', async () => {
   const sim = await createSim({ mode: MODE.MATCH, players: [{ id: 'player', team: 'blue' }, { id: 'bot', team: 'orange', kind: 'bot' }] });
   sim.attachBot('bot', new BotController({ carId: 'bot', team: 'orange', config: CONFIG.bot, random: seeded(3) }));

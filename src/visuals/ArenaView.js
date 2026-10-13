@@ -55,10 +55,10 @@ export class ArenaView {
     const d = geometry.dims;
     const t = this.textures;
     const rampMat = new THREE.MeshStandardMaterial({
-      color: 0x1d2a3d, roughness: 0.55, metalness: 0.25, emissive: 0x2d6fc0, emissiveMap: t.rampGlow, emissiveIntensity: 0.22,
+      color: 0x1a2a3f, roughness: 0.42, metalness: 0.38, emissive: 0x2d6fc0, emissiveMap: t.rampGlow, emissiveIntensity: 0.22,
     });
-    const glassMat = new THREE.MeshBasicMaterial({ map: t.glass, color: 0xa9cfff, transparent: true, depthWrite: false });
-    const glassFaint = new THREE.MeshBasicMaterial({ map: t.glassFaint, color: 0xa9cfff, transparent: true, depthWrite: false });
+    const glassMat = new THREE.MeshBasicMaterial({ map: t.glass, color: 0xc0dbff, transparent: true, opacity: 0.9, depthWrite: false });
+    const glassFaint = new THREE.MeshBasicMaterial({ map: t.glassFaint, color: 0xb9d5ff, transparent: true, opacity: 0.8, depthWrite: false });
     const ramp = new THREE.Mesh(toGeometry(geometry.visual.ramp), rampMat);
     ramp.receiveShadow = true;
     const wall = new THREE.Mesh(toGeometry(geometry.visual.wall), glassMat);
@@ -80,12 +80,12 @@ export class ArenaView {
     for (const goal of geometry.goals) {
       const color = TEAM_COLORS[goal.team];
       const netMat = new THREE.MeshStandardMaterial({
-        color, emissive: color, emissiveIntensity: 0.35, map: this.textures.net,
+        color, emissive: color, emissiveIntensity: 0.38, map: this.textures.net,
         transparent: true, depthWrite: false, side: THREE.DoubleSide, roughness: 0.7,
       });
       const net = new THREE.Mesh(toGeometry(geometry.visual[goal.team === 'blue' ? 'goalBlue' : 'goalOrange']), netMat);
       net.renderOrder = 1;
-      const frameMat = new THREE.MeshStandardMaterial({ color, emissive: color, emissiveIntensity: 1.6, roughness: 0.4 });
+      const frameMat = new THREE.MeshStandardMaterial({ color, emissive: color, emissiveIntensity: 1.25, roughness: 0.35 });
       const r = 0.11;
       for (const xs of [1, -1]) {
         const post = new THREE.Mesh(new THREE.CylinderGeometry(r, r, d.gh, 12), frameMat);

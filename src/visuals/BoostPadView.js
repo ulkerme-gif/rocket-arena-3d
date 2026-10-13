@@ -8,9 +8,9 @@ export class BoostPadView {
     const bigGeo = new THREE.CylinderGeometry(1.25, 1.35, 0.08, 32);
     const smallGeo = new THREE.CylinderGeometry(0.6, 0.66, 0.06, 24);
     const orbGeo = new THREE.SphereGeometry(0.42, 24, 16);
-    const orbMat = new THREE.MeshStandardMaterial({ color: 0xffd65a, emissive: 0xffb81f, emissiveIntensity: 1.8, roughness: 0.3 });
+    const orbMat = new THREE.MeshStandardMaterial({ color: 0xffe8a8, emissive: 0xffc94a, emissiveIntensity: 1.5, roughness: 0.2 });
     this.items = pads.map((pad) => {
-      const mat = new THREE.MeshStandardMaterial({ color: 0x2a2410, emissive: 0xffc531, emissiveIntensity: 0.9, roughness: 0.5 });
+      const mat = new THREE.MeshStandardMaterial({ color: 0x1f1b13, emissive: 0xffc531, emissiveIntensity: 0.75, roughness: 0.4 });
       const base = new THREE.Mesh(pad.big ? bigGeo : smallGeo, mat);
       base.position.set(pad.x, 0.04, pad.z);
       base.receiveShadow = true;

@@ -186,7 +186,8 @@ export class BotController {
     }
     ip ??= pred[pred.length - 1].p;
     const ballP = new Vector3(ip.x, 0, ip.z);
-    if (this.preset.aimNoise > 0) this.noise.set(this.random() - 0.5, 0, this.random() - 0.5).multiplyScalar(this.preset.aimNoise * 6);
+    const noiseScale = this.preset.aimNoise ?? 0;
+    if (noiseScale > 0) this.noise.set((this.random() - 0.5) * noiseScale * 12, 0, (this.random() - 0.5) * noiseScale * 12);
     else this.noise.set(0, 0, 0);
 
     // Wrong side of the ball? Rotate back past it towards our own goal.
@@ -205,6 +206,11 @@ export class BotController {
     const shotDir = aim.clone().sub(ballP).normalize();
     const dist = Math.hypot(ballP.x - pos.x, ballP.z - pos.z);
     const target = ballP.clone().addScaledVector(shotDir, -clamp(dist * 0.35, 0.6, 6)).add(this.noise);
+    const mistakeRate = this.preset.mistakeRate ?? 0;
+    if (mistakeRate > 0 && this.random() < mistakeRate) {
+      target.x += (this.random() - 0.5) * 3.5;
+      target.z += (this.random() - 0.5) * 2.8;
+    }
     target.x = clamp(target.x, -A.halfWidth + 1.5, A.halfWidth - 1.5);
     target.z = clamp(target.z, -b + 1.5, b - 1.5);
     return { mode: 'attack', target, boost: true, shotDir };
@@ -215,18 +221,22 @@ export class BotController {
     const local = ctx.toLocal(plan.target);
     const angle = Math.atan2(local.x, -local.z);
     const dist = Math.hypot(local.x, local.z);
+    const speedBias = this.preset.speedBias ?? 1;
     ctrl.steer = clamp(angle * cfg.steerGain, -1, 1);
-    ctrl.throttle = this.preset.maxThrottle;
+    ctrl.throttle = this.preset.maxThrottle * speedBias;
     if (Math.abs(angle) > cfg.reverseAngle && dist < 6 && ctx.fwdSpeed < 3) {
-      ctrl.throttle = -1;
+      ctrl.throttle = -1 * speedBias;
       ctrl.steer = Math.sign(angle) || 1;
     }
     ctrl.handbrake = Math.abs(angle) > cfg.handbrakeAngle && ctx.fwdSpeed > 8 && !ctx.onWall;
     ctrl.boost =
       !!plan.boost && this.preset.useBoost && Math.abs(angle) < cfg.boostAngle && ctx.fwdSpeed > 2 &&
       ctx.speed < 22.5 && ctx.me.boost > 0 && !ctx.onWall && (dist > 7 || !!plan.kickoff);
+    if ((this.preset.boostBias ?? 1) < 1 && ctrl.boost && this.random() > this.preset.boostBias) {
+      ctrl.boost = false;
+    }
     if (plan.arrive && dist < 4) {
-      ctrl.throttle = ctx.fwdSpeed > 1.5 ? -0.4 : 0;
+      ctrl.throttle = ctx.fwdSpeed > 1.5 ? -0.4 * speedBias : 0;
       ctrl.boost = false;
       ctrl.handbrake = false;
     }

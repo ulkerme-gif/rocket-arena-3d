@@ -167,23 +167,23 @@ export function getBallTexture() {
   return ballTexture;
 }
 
-export function createSkyDome() {
+export function createSkyDome(top = 0x071827, horizon = 0x1b3d5e, glow = 0x4a7bb7) {
   const mat = new THREE.ShaderMaterial({
     side: THREE.BackSide,
     depthWrite: false,
     fog: false,
     uniforms: {
-      top: { value: new THREE.Color(0x04070d) },
-      horizon: { value: new THREE.Color(0x1a3352) },
-      glow: { value: new THREE.Color(0x3a5f8c) },
+      top: { value: new THREE.Color(top) },
+      horizon: { value: new THREE.Color(horizon) },
+      glow: { value: new THREE.Color(glow) },
     },
     vertexShader: `varying vec3 vDir;
 void main() { vDir = normalize(position); gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
     fragmentShader: `uniform vec3 top; uniform vec3 horizon; uniform vec3 glow; varying vec3 vDir;
 void main() {
   float h = vDir.y;
-  vec3 c = mix(horizon, top, smoothstep(-0.05, 0.6, h));
-  c += glow * exp(-abs(h) * 10.0) * 0.5;
+  vec3 c = mix(horizon, top, smoothstep(-0.1, 0.7, h));
+  c += glow * exp(-abs(h) * 9.0) * 0.75;
   gl_FragColor = vec4(c, 1.0);
   #include <tonemapping_fragment>
   #include <colorspace_fragment>
