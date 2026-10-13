@@ -90,3 +90,40 @@ body.mode-training .touch-training{display:flex}
 .team-size button.active{background:#f1f8ff;color:#0c1920;border-color:#f1f8ff}
 .team-size button:focus-visible{outline:3px solid #baff39;outline-offset:2px}
 .btn b{font-weight:inherit}
+
+/* Name tags above cars */
+.name-tags{position:fixed;inset:0;z-index:9;pointer-events:none;overflow:hidden}
+.name-tag{position:absolute;left:0;top:0;transform-origin:50% 100%;padding:3px 10px 4px;border-radius:4px;background:#07131fcc;color:#f2f8ff;
+  font:800 15px/1.15 'Barlow Condensed','Arial Narrow',system-ui,sans-serif;letter-spacing:.05em;white-space:nowrap;
+  border-bottom:3px solid #8fd0ff;text-shadow:0 1px 2px #000a;will-change:transform}
+.name-tag[data-team="blue"]{border-bottom-color:#3d9bff}
+.name-tag[data-team="orange"]{border-bottom-color:#ff8a32}
+
+/* GARAJ (skin editor): panel left in landscape, bottom sheet in portrait; the 3D car stays visible. */
+.garage{position:absolute;inset:0;z-index:30;pointer-events:none}
+.garage-panel{pointer-events:auto;position:absolute;left:0;top:0;bottom:0;width:min(440px,100%);overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;
+  padding:calc(22px + env(safe-area-inset-top)) 26px calc(24px + env(safe-area-inset-bottom)) calc(26px + env(safe-area-inset-left));
+  background:linear-gradient(90deg,#030a13f7 0%,#030b16ec 82%,#030b1600)}
+.garage-panel h2{font-size:64px;line-height:.9;margin:10px 0 6px;letter-spacing:-.02em}
+.garage-sub{color:#9fb8ca;font-size:13px;line-height:1.5;margin:0 0 6px;max-width:36ch}
+.garage-label{display:block;margin:14px 0 7px;color:#9bbacc;font:800 11px/1.4 system-ui,sans-serif;letter-spacing:.15em}
+.swatches{display:flex;flex-wrap:wrap;gap:7px}
+.swatch{width:38px;height:38px;border-radius:50%;border:2px solid #ffffff33;background:var(--swatch);padding:0;touch-action:manipulation}
+.swatch-wide{width:auto;padding:0 13px;border-radius:19px;color:#fff;font:800 12px system-ui,sans-serif;letter-spacing:.06em;text-shadow:0 1px 3px #000}
+.swatches-small{gap:5px}
+.swatches-small .swatch{width:30px;height:30px}
+.swatch[aria-pressed="true"]{border-color:#c4fc40;box-shadow:0 0 0 3px #c4fc4060}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{min-height:36px;padding:0 12px;border:1px solid #748a9d66;border-radius:5px;background:#0f2334e0;color:#c6d8e5;
+  font:800 16px/1 'Barlow Condensed','Arial Narrow',system-ui,sans-serif;letter-spacing:.06em;touch-action:manipulation}
+.chip[aria-pressed="true"]{background:#f1f8ff;color:#0c1920;border-color:#f1f8ff}
+.garage-number{width:92px;background:#091e2f;border:1px solid #3b627d;color:#fff;border-radius:8px;padding:8px 12px;text-align:center;
+  font:800 26px/1 'Barlow Condensed','Arial Narrow',system-ui,sans-serif}
+.garage-art{display:block;width:100%;aspect-ratio:32/12;border-radius:6px;border:1px solid #3b627d;touch-action:none;cursor:crosshair;margin-bottom:8px;pointer-events:auto}
+.garage-tools{display:flex;gap:6px;margin-top:8px}
+.garage-actions{display:flex;flex-direction:column;gap:6px;margin-top:18px}
+.garage-actions .btn{min-height:50px}
+@media (orientation:portrait),(max-width:700px){
+  .garage-panel{top:auto;width:100%;height:58vh;padding-top:16px;background:#030a13f2;border-top:1px solid #3b627d88}
+  .garage-panel h2{font-size:42px}
+}

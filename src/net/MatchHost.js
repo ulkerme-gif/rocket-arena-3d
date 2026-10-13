@@ -6,6 +6,7 @@ import { normalizeTeamSize, seatList } from '../game/teams.js';
 import { ZERO_INPUT, cleanInput, cleanName, asPacket } from './protocol.js';
 import { compactState, padLayoutOf } from './snapshot.js';
 import { PROTOCOL_VERSION } from './roomCode.js';
+import { cleanSkin, isDefaultSkin } from '../visuals/skins.js';
 
 const defaultNow = () => (typeof performance !== 'undefined' ? performance.now() : Date.now());
 
@@ -27,7 +28,7 @@ export class MatchHost {
     config = CONFIG,
     roomCode = '',
     teamSize = 1,
-    snapshotEvery = 4,
+    snapshotEvery = null,
     inputTimeoutMs = 300,
     maxMessagesPerSecond = 150,
     now = defaultNow,
@@ -39,7 +40,8 @@ export class MatchHost {
     this.roomCode = roomCode;
     this.teamSize = normalizeTeamSize(teamSize);
     this.seats = seatList(this.teamSize);
-    this.snapshotEvery = Math.max(1, snapshotEvery);
+    // 60 snapshots/s (40/s in 3v3, where the host feeds five guests) keep guests smooth on Wi-Fi.
+    this.snapshotEvery = Math.max(1, snapshotEvery ?? (this.teamSize === 3 ? 3 : 2));
     this.inputTimeoutMs = inputTimeoutMs;
     this.maxMessagesPerSecond = maxMessagesPerSecond;
     this.now = now;
@@ -66,7 +68,7 @@ export class MatchHost {
     if (!packet || typeof packet.type !== 'string') return;
     const player = this.playerFor(handle);
     if (!player) {
-      if (packet.type === 'join') this.join(handle, packet.name, { version: packet.version });
+      if (packet.type === 'join') this.join(handle, packet.name, { version: packet.version, skin: packet.skin });
       return;
     }
     const t = this.now();
@@ -78,7 +80,7 @@ export class MatchHost {
     else if (packet.type === 'leave') this.leave(handle);
   }
 
-  join(handle, name, { local = false, version = PROTOCOL_VERSION } = {}) {
+  join(handle, name, { local = false, version = PROTOCOL_VERSION, skin = null } = {}) {
     if (this.disposed || this.playerFor(handle)) return null;
     if (!local && version !== PROTOCOL_VERSION) {
       return this._reject(handle, 'Oyun sürümleri farklı. İki tablette de sayfayı yenileyip tekrar dene.');
@@ -91,6 +93,7 @@ export class MatchHost {
       id: seat.id,
       team: seat.team,
       name: cleanName(name),
+      skin: skin && !isDefaultSkin(skin) ? cleanSkin(skin) : null,
       input: { ...ZERO_INPUT, sequence: 0 },
       lastSequence: 0,
       lastProcessedSequence: 0,
@@ -231,7 +234,7 @@ export class MatchHost {
   roster() {
     return this.seats.map((s) => {
       const p = this.players.find((x) => x.id === s.id);
-      return { seat: s.id, team: s.team, name: p ? p.name : null, host: !!p?.local };
+      return { seat: s.id, team: s.team, name: p ? p.name : null, host: !!p?.local, skin: p?.skin ?? null };
     });
   }
 

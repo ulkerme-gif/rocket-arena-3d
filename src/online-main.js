@@ -15,8 +15,11 @@ import { MatchHost } from './net/MatchHost.js';
 import { ZERO_INPUT, asPacket, cleanName } from './net/protocol.js';
 import { expandState } from './net/snapshot.js';
 import { HostedRoom, describePeerError, joinHostedRoom, loadPeerClass } from './net/PeerTransport.js';
+import { describeNetwork, probeBroker, probeIce } from './net/networkCheck.js';
 import { PROTOCOL_VERSION, codeFromLocation, inviteLink, normalizeRoomCode, roomCodeProblem } from './net/roomCode.js';
 import { formatLabel, normalizeTeamSize } from './game/teams.js';
+import { NameTags } from './visuals/NameTags.js';
+import { loadSkin } from './visuals/skins.js';
 
 const el = id => document.getElementById(id);
 const show = (id, visible) => el(id).classList.toggle('hidden', !visible);
@@ -49,6 +52,9 @@ class OnlineApp {
     this.orbitDims = this.arenaGeometry.dims;
     this.camera = new CameraRig(this.renderer.camera, CONFIG.camera);
     this.input = new InputManager(CONFIG.controls);
+    this.nameTags = new NameTags(el('name-tags'));
+    this.tagObjects = null; // id -> car render group of the current view
+    this.cameraLabel = '';
 
     this.role = null;        // 'host' | 'guest' | null
     this.session = null;     // host: { room, match, local } · guest: { connection, code }
@@ -62,7 +68,7 @@ class OnlineApp {
     this.view = null;                         // guest: RemoteGameView
     this.gameView = null; this.viewSim = null; this.viewOff = null; this.accumulator = 0; // host
     this.pendingJump = false; this.lastSend = 0; this.inputSequence = 0;
-    this.toastUntil = 0; this.wakeLock = null; this.wakeLockPending = false; this.prevTime = performance.now();
+    this.toastUntil = 0; this.wakeLock = null; this.wakeLockPending = false; this.wantWakeLock = false; this.prevTime = performance.now();
 
     try { el('player-name').value = localStorage.getItem(NAME_KEY) || el('player-name').value; } catch { /* private mode */ }
     let savedSize = 1;
@@ -71,6 +77,8 @@ class OnlineApp {
       button.addEventListener('click', () => this.setLobbySize(button.dataset.teamSize));
     }
     this.setLobbySize(savedSize);
+    const skin = loadSkin();
+    el('skin-chip').style.setProperty('--chip', skin.base === 'team' ? 'linear-gradient(90deg,#1f74e0 50%,#f0661a 50%)' : skin.base);
     const invited = codeFromLocation();
     if (invited) {
       el('room-code').value = invited;
@@ -79,6 +87,7 @@ class OnlineApp {
 
     el('room-create').onclick = () => this.createRoom();
     el('online-join').onclick = () => this.joinRoom();
+    el('network-test').onclick = () => this.testNetwork();
     el('room-code').addEventListener('input', e => {
       e.target.value = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 4);
     });
@@ -95,10 +104,10 @@ class OnlineApp {
       show('online-rematch', false);
     };
     document.addEventListener('visibilitychange', () => {
-      if (document.visibilityState === 'visible' && this.session && !this.wakeLock) this.requestWakeLock();
+      if (document.visibilityState === 'visible' && this.wantWakeLock && !this.wakeLock) this.requestWakeLock();
     });
     // Safari may only grant the screen wake lock right after a tap, so retry on the next touch.
-    document.addEventListener('pointerdown', () => { if (this.session && !this.wakeLock) this.requestWakeLock(); }, { passive: true });
+    document.addEventListener('pointerdown', () => { if (this.wantWakeLock && !this.wakeLock) this.requestWakeLock(); }, { passive: true });
     window.addEventListener('pagehide', () => this.leave({ silent: true, immediate: true }));
 
     this._frame = this._frame.bind(this);
@@ -126,7 +135,7 @@ class OnlineApp {
 
   setBusy(busy) {
     this.busy = busy;
-    for (const id of ['room-create', 'online-join', 'room-code', 'player-name']) el(id).disabled = busy;
+    for (const id of ['room-create', 'online-join', 'room-code', 'player-name', 'network-test']) el(id).disabled = busy;
     for (const button of el('room-size').querySelectorAll('button')) button.disabled = busy;
   }
 
@@ -151,6 +160,7 @@ class OnlineApp {
     if (this.busy) return;
     const name = this.saveName();
     this.leave({ silent: true });
+    this.keepScreenOn(); // still inside the tap: Safari only grants the wake lock here
     const token = ++this.sessionToken;
     this.setBusy(true);
     this.status('Oda hazırlanıyor…');
@@ -167,10 +177,9 @@ class OnlineApp {
       this.session = { room, match, local };
       this.roomCode = room.code;
       room.onConnection = link => this.acceptGuest(link);
-      match.join(local, name, { local: true });
+      match.join(local, name, { local: true, skin: loadSkin() });
       this.accumulator = 0;
       this.showRoomCard();
-      this.requestWakeLock();
     } catch (error) {
       if (token !== this.sessionToken) return;
       console.warn('[Online] room could not be created', error);
@@ -268,22 +277,26 @@ class OnlineApp {
     el('room-code').value = code;
     const name = this.saveName();
     this.leave({ silent: true });
+    this.keepScreenOn();
     const token = ++this.sessionToken;
     this.setBusy(true);
-    this.status(`${code} odasına bağlanılıyor…`);
+    this.status('Eşleştirme servisine bağlanılıyor…');
     try {
       const Peer = await loadPeerClass();
       if (token !== this.sessionToken) return;
-      const connection = await joinHostedRoom({ Peer, code });
+      const connection = await joinHostedRoom({ Peer, code, onProgress: stage => {
+        if (token !== this.sessionToken) return;
+        if (stage === 'searching') this.status(`${code} odası aranıyor…`);
+        else if (stage === 'found') this.status('Oda bulundu, tabletler birbirine bağlanıyor…');
+      } });
       if (token !== this.sessionToken) { connection.close(); return; }
       this.role = 'guest';
       this.session = { connection, code };
       this.roomCode = code;
       connection.link.onMessage = data => { if (this.session?.connection === connection) this.handleMessage(data); };
       connection.link.onClose = reason => { if (this.session?.connection === connection) this.lostConnection(reason); };
-      connection.link.send({ type: 'join', name, version: PROTOCOL_VERSION });
+      connection.link.send({ type: 'join', name, version: PROTOCOL_VERSION, skin: loadSkin() });
       this.status(`${code} odasına bağlandın. Maç hazırlanıyor…`);
-      this.requestWakeLock();
     } catch (error) {
       if (token !== this.sessionToken) return;
       console.warn('[Online] could not join room', error);
@@ -319,6 +332,7 @@ class OnlineApp {
     } else if (msg.type === 'roster') {
       this.roster = { teamSize: normalizeTeamSize(msg.teamSize), seats: Array.isArray(msg.seats) ? msg.seats : [] };
       if (!this.ready) this.renderRoster();
+      this.applyRoster();
     } else if (msg.type === 'notice') {
       if (typeof msg.text === 'string') this.toast(msg.text.slice(0, 80), 2600);
     } else if (msg.type === 'roomStatus') {
@@ -360,8 +374,12 @@ class OnlineApp {
     this.state = state;
     if (this.role === 'guest') {
       const full = expandState(state, this.padLayout);
-      if (!this.view) { this.view = new RemoteGameView(this.renderer, full, this.myId); this.camera.snap(); }
-      else this.view.onSnapshot(full);
+      if (!this.view) {
+        this.view = new RemoteGameView(this.renderer, full, this.myId);
+        this.tagObjects = new Map([...this.view.views].map(([id, v]) => [id, v.group]));
+        this.applyRoster();
+        this.camera.snap();
+      } else this.view.onSnapshot(full);
     }
     show('online-hud', true); show('online-boost', true); show('online-camera', true);
     el('online-blue').textContent = state.score.blue;
@@ -380,7 +398,23 @@ class OnlineApp {
     }
   }
 
+  /** Names above other cars and everyone's skins, from the latest roster. */
+  applyRoster() {
+    const seats = this.roster?.seats ?? [];
+    this.nameTags.set(seats.filter(s => s.seat !== this.myId).map(s => ({ id: s.seat, text: s.name ?? 'BOT', team: s.team })));
+    for (const seat of seats) {
+      if (this.role === 'host') this.gameView?.carViews.get(seat.seat)?.setSkin(seat.skin);
+      else this.view?.setSkin(seat.seat, seat.skin);
+    }
+  }
+
+  updateNameTags() {
+    this.renderer.camera.updateMatrixWorld();
+    this.nameTags.update(this.renderer.camera, this.tagObjects, window.innerWidth, window.innerHeight);
+  }
+
   disposeView() {
+    if (this.view) this.tagObjects = null;
     this.view?.dispose(); this.view = null; this.state = null;
     show('online-hud', false); show('online-boost', false); show('online-camera', false);
     this.camera.snap();
@@ -393,10 +427,30 @@ class OnlineApp {
     this.viewOff?.();
     this.gameView?.dispose();
     this.gameView = null; this.viewOff = null; this.viewSim = sim; this.accumulator = 0;
+    this.tagObjects = null;
     if (sim) {
       this.gameView = new GameView(this.renderer, sim);
+      this.tagObjects = new Map([...this.gameView.carViews].map(([id, v]) => [id, v.group]));
+      this.applyRoster();
       this.viewOff = sim.events.on('kickoff', () => this.camera.snap());
       this.camera.snap();
+    }
+  }
+
+  /** Lobby self-check: broker, direct internet path (STUN) and relay (TURN), on this tablet alone. */
+  async testNetwork() {
+    if (this.busy) return;
+    this.setBusy(true);
+    this.status('Bağlantı test ediliyor… (10 saniye kadar sürebilir)');
+    try {
+      const Peer = await loadPeerClass();
+      const [broker, ice] = await Promise.all([probeBroker({ Peer }), probeIce()]);
+      this.status(describeNetwork({ broker, ice }), broker && ice.supported ? 'info' : 'error');
+    } catch (error) {
+      console.warn('[Online] network test failed', error);
+      this.status('Test yapılamadı. İnternet bağlantını kontrol edip tekrar dene.', 'error');
+    } finally {
+      this.setBusy(false);
     }
   }
 
@@ -416,6 +470,7 @@ class OnlineApp {
     }
     this.ready = false; this.myId = null; this.myTeam = null; this.padLayout = null; this.pendingJump = false;
     this.roomCode = null; this.roster = null;
+    this.nameTags.clear();
     el('online-room-tag').textContent = 'ONLINE';
     this.disposeView();
     this.syncHostView();
@@ -423,6 +478,7 @@ class OnlineApp {
     show('room-card', false);
     show('online-rematch', false);
     this.hideToast();
+    this.wantWakeLock = false;
     this.releaseWakeLock();
     if (!silent) {
       show('online-panel', true);
@@ -430,12 +486,18 @@ class OnlineApp {
     }
   }
 
+  /** Keep the screen awake while in a room (host: the match runs here). Call from a tap. */
+  keepScreenOn() {
+    this.wantWakeLock = true;
+    this.requestWakeLock();
+  }
+
   async requestWakeLock() {
-    if (!navigator.wakeLock || document.visibilityState !== 'visible' || this.wakeLockPending) return;
+    if (!navigator.wakeLock || document.visibilityState !== 'visible' || this.wakeLockPending || this.wakeLock) return;
     this.wakeLockPending = true;
     try {
       const lock = await navigator.wakeLock.request('screen');
-      if (!this.session) { lock.release().catch(() => {}); return; }
+      if (!this.wantWakeLock) { lock.release().catch(() => {}); return; }
       this.wakeLock = lock;
       lock.addEventListener?.('release', () => { if (this.wakeLock === lock) this.wakeLock = null; });
     } catch { /* low power mode or unsupported: the game still works, the screen may dim */ }
@@ -460,7 +522,12 @@ class OnlineApp {
     else if (this.role === 'guest' && this.session) this.guestFrame(now, dt, input);
     else this.camera.updateOrbit(dt, this.orbitDims, focus.set(0, 1, 0));
 
-    el('online-camera').innerHTML = `BALL CAM <strong>${this.camera.ballCam ? 'ON' : 'OFF'}</strong>`;
+    const cameraLabel = this.camera.ballCam ? 'ON' : 'OFF';
+    if (cameraLabel !== this.cameraLabel) {
+      this.cameraLabel = cameraLabel;
+      el('online-camera').innerHTML = `BALL CAM <strong>${cameraLabel}</strong>`;
+    }
+    if (this.tagObjects) this.updateNameTags();
     if (this.toastUntil && now > this.toastUntil) this.hideToast();
     this.renderer.render();
     requestAnimationFrame(this._frame);
@@ -510,7 +577,6 @@ class OnlineApp {
         const controls = { ...input.controls, jump: this.pendingJump || input.controls.jump, sequence: this.inputSequence, timestamp: Date.now() };
         this.pendingJump = false;
         link.send({ type: 'input', controls });
-        this.view?.predictionEngine.recordInput(this.inputSequence, controls, 1 / 60);
       }
     } else this.pendingJump = false;
   }

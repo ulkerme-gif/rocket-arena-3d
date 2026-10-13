@@ -12,7 +12,8 @@
   font:800 30px/1 'Barlow Condensed','Arial Narrow',Impact,sans-serif; }
 .join-row input::placeholder { color:#3b627d; letter-spacing:.2em; }
 .join-row .btn { flex:1; margin-top:0; }
-#online-status { min-height:26px; margin:6px 0 0; font: 600 13px/1.6 system-ui; color:#d0e2ee; }
+#online-status { min-height:26px; margin:6px 0 0; font: 600 13px/1.6 system-ui; color:#d0e2ee; white-space:pre-line; }
+.online-form .network-test { min-height:40px; margin-top:0; padding:8px 0; font-size:16px; justify-content:flex-start; }
 #online-status[data-tone="error"] { color:#ffb38a; }
 .online-back { display:inline-block; margin-top:4px; color:#b1d2e6; font:600 13px system-ui; text-decoration:none; }
 .online-back:hover { text-decoration:underline; }
@@ -52,3 +53,5 @@
 .roster li[data-host="true"]::after { content:' · kurucu'; color:#9cc6e3; font-weight:600; }
 
 .online-form .team-size button { margin-top:0; }
+.skin-link { display:flex; align-items:center; gap:8px; margin:2px 0 4px; }
+.skin-chip { width:16px; height:16px; border-radius:50%; border:2px solid #ffffff66; background:var(--chip, #1f74e0); flex:none; }

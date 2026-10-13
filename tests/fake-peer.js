@@ -15,7 +15,18 @@ class Emitter {
 const later = (fn, ms = 0) => setTimeout(fn, ms);
 const error = (type) => Object.assign(new Error(type), { type });
 
-export function createFakeBroker({ delayMs = 1, offline = false } = {}) {
+/** Minimal RTCPeerConnection stand-in: only what ConnectionLink observes. */
+class FakePeerConnection extends Emitter {
+  constructor() { super(); this.signalingState = 'stable'; this.iceConnectionState = 'new'; }
+  addEventListener(type, fn) { this.on(type, fn); }
+  set(field, value, event) { this[field] = value; this.emit(event); }
+}
+
+/**
+ * Options: offline (broker unreachable), hostAnswers (host replies to offers),
+ * directPath (the data channel opens; false = NAT blocks every path).
+ */
+export function createFakeBroker({ delayMs = 1, offline = false, hostAnswers = true, directPath = true } = {}) {
   const peers = new Map();
   const created = [];
   let anon = 0;
@@ -30,6 +41,7 @@ export function createFakeBroker({ delayMs = 1, offline = false } = {}) {
       this.closed = false;
       this.other = null;
       this.dataChannel = { bufferedAmount: 0 };
+      this.peerConnection = new FakePeerConnection();
       this.sent = [];
       owner.connections.add(this);
     }
@@ -75,12 +87,16 @@ export function createFakeBroker({ delayMs = 1, offline = false } = {}) {
     connect(remoteId, options) {
       const conn = new FakeConnection(this, remoteId, options);
       later(() => {
+        conn.peerConnection.set('signalingState', 'have-local-offer', 'signalingstatechange');
         const host = peers.get(remoteId);
         if (!host || host.destroyed) { this.emit('error', error('peer-unavailable')); return; }
+        if (!hostAnswers) return; // host tab asleep / in another app: the offer is never answered
         const remote = new FakeConnection(host, this.id, options);
         remote.other = conn;
         conn.other = remote;
         host.emit('connection', remote);
+        conn.peerConnection.set('signalingState', 'stable', 'signalingstatechange');
+        if (!directPath) return; // answered, but no network path works (no TURN)
         later(() => {
           if (conn.closed || remote.closed) return;
           conn.open = true;
@@ -119,4 +135,10 @@ export async function until(predicate, timeoutMs = 2000, stepMs = 5) {
     if (Date.now() - start > timeoutMs) throw new Error('Timed out waiting for condition');
     await wait(stepMs);
   }
+}
+
+/** Transport timers are unref'd (they must never hold CI open), so tests that wait on them keep the loop alive. */
+export function keepAlive() {
+  const timer = setInterval(() => {}, 1000);
+  return () => clearInterval(timer);
 }

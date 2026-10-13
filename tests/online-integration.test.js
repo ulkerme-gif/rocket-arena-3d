@@ -120,14 +120,14 @@ test('mid-match: a newcomer takes over a bot seat, a leaver is replaced by a bot
   match.dispose();
 });
 
-test('snapshots stream at 30 Hz, are compact, and acknowledge only inputs used by physics', async () => {
+test('snapshots stream at 60 Hz, are compact, and acknowledge only inputs used by physics', async () => {
   const { match, host, clock } = await hostedRoom(1);
   const guest = handle('guest');
   join(match, guest);
   const before = guest.count('snapshot');
   tick(match, clock, 120); // one second of physics
-  assert.equal(guest.count('snapshot') - before, 30);
-  assert.equal(host.count('snapshot') - 1, 30, 'host HUD gets the same stream locally');
+  assert.equal(guest.count('snapshot') - before, 60);
+  assert.equal(host.count('snapshot') - 1, 60, 'host HUD gets the same stream locally');
 
   const snap = guest.last('snapshot').state;
   const bytes = JSON.stringify(guest.last('snapshot')).length;
@@ -139,14 +139,14 @@ test('snapshots stream at 30 Hz, are compact, and acknowledge only inputs used b
   assert.equal(full.cars.find((c) => c.id === 'orange-1').team, 'orange');
 
   match.handlePacket(guest, { type: 'input', controls: { sequence: 1, timestamp: 5, throttle: 1 } });
-  tick(match, clock, 4);
+  tick(match, clock, 2);
   assert.equal(guest.last('snapshot').state.lastProcessedSequence, 1);
   assert.equal(host.last('snapshot').state.lastProcessedSequence, 0, 'each player gets their own ACK');
   match.handlePacket(guest, { type: 'input', controls: { sequence: 1, throttle: -1 } });
   assert.equal(match.playerFor(guest).input.throttle, 1, 'replayed sequence ignored');
   match.handlePacket(guest, { type: 'input', controls: { sequence: 2, position: { x: 99, y: 99, z: 99 } } });
   assert.equal('position' in match.playerFor(guest).input, false, 'positions never accepted');
-  tick(match, clock, 4);
+  tick(match, clock, 2);
   assert.equal(guest.last('snapshot').state.lastProcessedSequence, 2);
 
   match.handlePacket(guest, { type: 'input', controls: { sequence: 3, throttle: 1 } });
@@ -156,12 +156,14 @@ test('snapshots stream at 30 Hz, are compact, and acknowledge only inputs used b
   match.dispose();
 });
 
-test('3v3 snapshot stays small enough for five guests on one tablet', async () => {
+test('3v3 snapshot stays small enough for five guests on one tablet (40 Hz)', async () => {
   const { match, clock } = await hostedRoom(3);
   const guest = handle('guest');
   join(match, guest);
   match.startMatch();
-  tick(match, clock, 8);
+  const before = guest.count('snapshot');
+  tick(match, clock, 120);
+  assert.equal(guest.count('snapshot') - before, 40);
   const bytes = JSON.stringify(guest.last('snapshot')).length;
   assert.ok(bytes < 2600, `3v3 snapshot is ${bytes} bytes`);
   assert.equal(guest.last('snapshot').state.cars.length, 6);
@@ -227,5 +229,24 @@ test('garbage packets and floods are ignored without crashing the host', async (
   assert.equal(match.playerFor(guest).lastSequence, 201);
   assert.equal(match.playerFor(guest).input.throttle, 1);
   assert.equal(match.playerFor(guest).input.steer, 0);
+  match.dispose();
+});
+
+test('skins travel with the join and reach everyone through the roster; junk is cleaned', async () => {
+  const { match, host } = await hostedRoom(2);
+  const art = '0'.repeat(30) + '3c' + '0'.repeat(352);
+  const painter = handle('painter');
+  match.handlePacket(painter, { type: 'join', name: 'Ressam', version: PROTOCOL_VERSION,
+    skin: { v: 1, base: '#FF5FA8', accent: '#ffffff', pattern: 'flames', number: '7', art } });
+  const sneaky = handle('sneaky');
+  match.handlePacket(sneaky, { type: 'join', name: 'X', version: PROTOCOL_VERSION,
+    skin: { base: 'url(javascript:alert(1))', pattern: '<img>', number: '12345', art: 'zz'.repeat(500), extra: 'x'.repeat(5000) } });
+  const seats = host.last('roster').seats;
+  const bySeat = Object.fromEntries(seats.map((s) => [s.seat, s]));
+  assert.deepEqual(bySeat['orange-1'].skin, { v: 1, base: '#ff5fa8', accent: '#ffffff', pattern: 'flames', number: '7', art });
+  assert.equal(bySeat['blue-2'].skin, null, 'an all-invalid skin falls back to the plain team look');
+  assert.equal(bySeat['blue-1'].skin, null, 'host without a custom skin');
+  assert.equal(bySeat['orange-2'].skin, null, 'bots have no skin');
+  assert.ok(JSON.stringify(host.last('roster')).length < 4000, 'roster stays small');
   match.dispose();
 });

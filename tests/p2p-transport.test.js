@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { HostedRoom, joinHostedRoom, describePeerError, ConnectionLink } from '../src/net/PeerTransport.js';
 import { PEER_ID_PREFIX, ROOM_CODE_ALPHABET, generateRoomCode, normalizeRoomCode } from '../src/net/roomCode.js';
-import { createFakeBroker, until, wait } from './fake-peer.js';
+import { createFakeBroker, until, wait, keepAlive } from './fake-peer.js';
 import { seeded } from './helpers.js';
 
 test('host registers its room code on the broker and a guest joins with that code', async () => {
@@ -127,4 +127,43 @@ test('ConnectionLink never throws on send after close and reports failed ICE', a
 
 test('room code alphabet avoids characters that are easy to mistype', () => {
   for (const ch of '01OIL') assert.equal(ROOM_CODE_ALPHABET.includes(ch), false, ch);
+});
+
+test('host that never answers vs. answered-but-no-network-path are told apart', async (t) => {
+  t.after(keepAlive());
+  const asleep = createFakeBroker({ hostAnswers: false });
+  const room1 = await HostedRoom.open({ Peer: asleep.Peer });
+  const stages = [];
+  await assert.rejects(
+    joinHostedRoom({ Peer: asleep.Peer, code: room1.code, linkOptions: { openTimeoutMs: 80 }, onProgress: (s) => stages.push(s) }),
+    (e) => e.type === 'no-answer' && /yanıt vermedi/.test(describePeerError(e)),
+  );
+  assert.deepEqual(stages, ['searching']);
+  room1.close();
+
+  const blocked = createFakeBroker({ directPath: false });
+  const room2 = await HostedRoom.open({ Peer: blocked.Peer });
+  const stages2 = [];
+  let caught = null;
+  await joinHostedRoom({ Peer: blocked.Peer, code: room2.code, linkOptions: { openTimeoutMs: 80 }, onProgress: (s) => stages2.push(s) })
+    .catch((e) => { caught = e; });
+  assert.equal(caught?.type, 'ice-timeout');
+  assert.deepEqual(stages2, ['searching', 'found'], 'the room was found before the path failed');
+  assert.match(describePeerError(caught, { turnConfigured: false }), /TURN/);
+  assert.match(describePeerError(caught, { turnConfigured: true }), /BAĞLANTIYI TEST ET/);
+  room2.close();
+});
+
+test('PeerJS gets our ICE list (STUN + optional TURN), never its discontinued TURN servers', async (t) => {
+  t.after(keepAlive());
+  const broker = createFakeBroker();
+  const ice = [{ urls: ['stun:stun.example:3478'] }, { urls: ['turn:t.example:3478?transport=udp'], username: 'u', credential: 'p' }];
+  const room = await HostedRoom.open({ Peer: broker.Peer, iceServers: ice });
+  const guest = await joinHostedRoom({ Peer: broker.Peer, code: room.code, iceServers: ice });
+  for (const peer of broker.created) {
+    assert.deepEqual(peer.options.config.iceServers, ice);
+    assert.doesNotMatch(JSON.stringify(peer.options), /peerjs\.com/);
+  }
+  guest.close();
+  room.close();
 });

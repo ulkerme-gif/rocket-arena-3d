@@ -5,6 +5,18 @@
 - **1v1 / 2v2 / 3v3:** Hem botlara karşı hem online. Boş koltuklara bot; maç ortasında katılan botun yerine geçer, çıkanın yerine bot geçer. Botlar takımda sırayla oynar (en yakın atak, diğerleri destek / kale).
 - **Dokunmatik v3:** Analog sürüş çubuğu + ZIPLA/BOOST/DRIFT/KAMERA, düğmeler arası kaydırma, antrenmanda sıfırlama düğmeleri. Önceki sürümde `InputManager` dokunmatik tuşlara hiç bağlı değildi; bu yüzden 2 test kırmızıydı ve GitHub Pages yayını yapılmıyordu.
 
+## Akıcılık + isim etiketi + garaj (2026-10-12, üçüncü yama)
+- Misafir tarafındaki takılma: snapshot'lar varış zamanına göre oynatılıyordu ve kendi araban sürekli düzeltilen kaba bir tahminle çiziliyordu (kamera da onunla sarsılıyordu). Yeni zaman çizelgesi kurucunun simülasyon saatini kullanıyor; snapshot hızı 30 → 60/s (3v3: 40/s). Simülasyonda (Wi-Fi gecikme dalgalanması + kurucu kare dalgalanması) görünür takılan kare oranı %20-36'dan ~%0'a indi, temiz ağda gecikme ~114 ms'den ~53 ms'ye düştü.
+- İsim etiketleri, GARAJ (kaplama düzenleyici, canlı 3D önizleme, parmakla çizim), kaplamaların online paylaşımı.
+- Protokol sürümü 3 (eski sürümle katılan tablete "sayfayı yenile" denir).
+- Yeni testler: `online-timeline`, `skins` (UV yönü dahil), `name-tags`, roster'da kaplama. Garaj, kaplamalı host/misafir oturumu ve etiketler tarayıcı simülasyonunda da denendi.
+
+## Bağlantı güncellemesi (2026-10-12, ikinci yama)
+- İlk gerçek denemede misafir tablette "zaman aşımı" görüldü. Sebep: PeerJS'in ücretsiz TURN sunucuları kapatılmış; doğrudan bağlantı kurulamayan ağlarda yedek yol yoktu.
+- ICE listesi artık `src/config/network.js` içinden (STUN + isteğe bağlı TURN). Hatalar ayrıştırıldı: oda yok / kurucu yanıt vermedi / ağ yolu yok / eşleştirme servisi yok.
+- Lobiye **BAĞLANTIYI TEST ET** eklendi. Ekran uyanık tutma isteği artık dokunuş anında yapılıyor (Safari kuralı).
+- `network-config` testleri ve sahte aracıda "kurucu yanıt vermiyor" / "ağ yolu yok" senaryoları eklendi.
+
 ## Otomatik testler (`npm test`, Node 22)
 - `physics`, `rules`, `arena`, `loop`, `bot` — mevcut fizik/kural/bot testleri (değişmedi).
 - `bot-team` — takım rolleri (2v2 başlama vuruşunda takım başına tek bot topa gider), 30 sn 3v3 bot maçı kararlılığı.

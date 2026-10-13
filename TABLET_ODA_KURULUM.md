@@ -33,6 +33,38 @@ git push
 
 İstersen push'tan önce Codespaces'te kontrol edebilirsin: `npm ci && npm test && npm run build && npm run test:smoke`.
 
+## Aracı sunucu (TURN): farklı ağlardan bağlanmak için
+
+İki tablet önce doğrudan bağlanmayı dener. Farklı ağlardaysanız (biri mobil veride, başka evde) ya da modem cihazların birbirini görmesini engelliyorsa doğrudan bağlantı kurulamaz. O zaman bir **aracı sunucu (TURN)** gerekir. PeerJS'in eski ücretsiz TURN sunucusu kapandı, bu yüzden kendi ücretsiz hesabını açman gerekiyor (ExpressTURN, ayda 1000 GB, kart istemez):
+
+1. Safari'de **https://www.expressturn.com** > **Dashboard** > **Sign up**. Website alanına oyun adresini yazabilirsin.
+2. Giriş yapınca Dashboard'da üç bilgi görürsün: **TURN Servers** (adres, sonu `:3478`), **Username**, **Password**.
+3. Codespaces'te `src/config/network.js` dosyasını aç ve bu üç bilgiyi tırnakların arasına yaz:
+   ```js
+   export const TURN = {
+     server: 'BURAYA_ADRES:3478',
+     username: 'BURAYA_USERNAME',
+     password: 'BURAYA_PASSWORD',
+   };
+   ```
+4. Terminalde:
+   ```bash
+   git add -A
+   git commit -m "TURN sunucusu eklendi"
+   git push
+   ```
+5. Actions yeşil olunca iki tablette de sayfayı yenile ve lobideki **BAĞLANTIYI TEST ET**'e bas. `✓ Aracı sunucu (TURN) çalışıyor` görmelisin.
+
+Not: Bu bilgiler yayınlanan sitede görünür; tarayıcı oyunlarında bu kaçınılmaz. Biri kotanı kullanırsa Dashboard'da **Refresh Credentials** ile yenileyip dosyaya tekrar yaz.
+
+## Garaj: kendi kaplaman
+
+Ana menüde **GARAJ · KAPLAMA** (online lobisinde **Kaplamanı düzenle**):
+- **Gövde rengi** (TAKIM RENGİ seçersen hangi takımdaysan o renk olur), **desen**, **desen rengi**, **numara**.
+- **Çizim · yan kapılar**: renk seç, kutuların üstünde parmağını gezdir. Aynı renkte bir kareye dokunmak onu siler; **SİLGİ** ve **ÇİZİMİ TEMİZLE** de var.
+- Araba sağda canlı döner; parmağınla çevirebilirsin. **KAYDET** deyince bu tablette saklanır.
+- Online'da odaya girerken kaplaman herkese gider. Takımını belli etmek için yandaki ışıklar ve isim etiketi takım renginde kalır.
+
 ## Online nasıl oynanır
 
 1. Herkes oyunda **ONLINE · ARKADAŞLARLA**'ya girer.
@@ -57,7 +89,7 @@ git push
 
 ## Bilmen gerekenler
 
-- **İnternet gerekir**, ama sadece tabletlerin birbirini bulması için (PeerJS'in ücretsiz eşleştirme servisi). Maç verisi doğrudan tabletler arasında gider. En düşük gecikme aynı Wi-Fi'da olur; farklı evlerden de çoğu ağda çalışır.
+- **İnternet gerekir**: tabletlerin birbirini bulması için (PeerJS'in ücretsiz eşleştirme servisi). Maç verisi doğrudan tabletler arasında, gerekirse TURN üzerinden gider. Farklı ağlardan oynamak için TURN ayarı gerekir (yukarıda).
 - **Kurucu tablet:** Safari açık, oyun ekranda kalmalı. Uygulamadan çıkarsa veya ekran kilitlenirse maç herkes için donar; 8 saniye sonra misafirlerin bağlantısı düşer. Maç sırasında ekranın kendiliğinden kararmaması istenir, ama Düşük Güç Modu'nda iPad buna izin vermeyebilir.
 - **3v3'te** kurucu tablet 6 arabanın fiziğini hesaplar ve 5 kişiye veri gönderir. Eski iPad'lerde ısınma/yavaşlama olursa **Ayarlar → Gölgeler**'i kapat.
 - Bot zorluğu, kurucunun **Ayarlar → Bot zorluğu** seçimidir.
@@ -68,11 +100,13 @@ git push
 - **"Bu kodla açık bir oda bulunamadı"**: Kod yanlış ya da kurucunun oyun ekranı kapandı.
 - **"Oyun sürümleri farklı"**: Bir tablette eski sürüm önbellekte. İki tablette de sayfayı yenile (`?v=3`).
 - **"Eşleştirme servisine ulaşılamadı"**: İnternet bağlantısını kontrol et.
-- **"Tabletler arasında doğrudan bağlantı kurulamadı"**: İki cihazı aynı Wi-Fi'a bağla. Bazı okul/kurum ağları doğrudan bağlantıyı engeller.
+- **"Oda var ama odayı kuran tablet yanıt vermedi"**: Kurucunun ekranı kilitlenmiş ya da kodu paylaşmak için başka uygulamaya geçmiş. Oyuna dönsün, sonra tekrar katıl.
+- **"Oda bulundu ama tabletler birbirine bağlanamadı"**: Ağlar doğrudan bağlantıya izin vermiyor. Yukarıdaki TURN ayarını yap. Aynı Wi-Fi'daysanız da modem engelliyor olabilir; TURN bunu da çözer.
+- **Ne olduğunu anlamak için**: Lobideki **BAĞLANTIYI TEST ET** o tabletin ağında neyin çalıştığını yazar.
 - **Dokunmatik tuşlar görünmüyor**: Actions yeşil mi? Sayfayı yenile. Tuşlar menüde gizlidir, maç başlayınca çıkar. Sağ üstte **🎮 TUŞLARI GÖSTER** yazıyorsa ona bas.
 
 ## Test durumu
 
-- 77 otomatik test ve sunucusuz 2v2 smoke testi geçiyor.
+- 90 otomatik test ve sunucusuz 2v2 smoke testi geçiyor.
 - Ayrıca online sayfası ve ana oyun bir tarayıcı simülasyonunda (jsdom, gerçek fizik) çalıştırıldı. Denenenler: oda kurma, kodla katılma, hatalı kod mesajları, maçı başlatma, misafir çıkınca bot devri, odayı kapatma, 3v3 botlara karşı ve sadece dokunmatik çubukla sürüş.
 - **Gerçek iPad'de ve iki gerçek cihaz arasında denenmedi.** Grafik çizimi, dokunmatik his ve gerçek WebRTC bağlantısını ilk oyunda kontrol et; bir sorun olursa ekrandaki mesajı ve ne yaptığını yaz.

@@ -3,6 +3,7 @@
 <head><meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/><meta name="theme-color" content="#061320"/><meta name="apple-mobile-web-app-capable" content="yes"/><meta name="mobile-web-app-capable" content="yes"/><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/><meta name="apple-mobile-web-app-title" content="Rocket Arena"/>
   <title>Rocket Arena 3D — ONLINE</title></head>
 <body>
+  <div id="name-tags" class="name-tags" aria-hidden="true"></div>
   <canvas id="game-canvas" aria-label="Çevrimiçi Rocket Arena oyun sahası"></canvas>
   <div id="online-ui">
     <header id="online-hud" class="hud hidden">
@@ -22,6 +23,7 @@
         <div class="online-form">
           <label for="player-name">OYUNCU ADI</label>
           <input id="player-name" maxlength="24" value="Oyuncu" autocomplete="nickname"/>
+          <a class="online-back skin-link" href="./?garaj=online"><span id="skin-chip" class="skin-chip" aria-hidden="true"></span>Kaplamanı düzenle</a>
           <span class="online-label" id="room-size-label">ODA BOYUTU</span>
           <div id="room-size" class="team-size" role="radiogroup" aria-labelledby="room-size-label">
             <button type="button" role="radio" data-team-size="1" aria-checked="true">1V1</button>
@@ -36,6 +38,7 @@
             <button id="online-join" class="btn btn-secondary" type="button">ODAYA KATIL <span>→</span></button>
           </div>
           <p id="online-status" role="status" aria-live="polite">Oda kur ya da arkadaşının verdiği kodu yaz.</p>
+          <button id="network-test" class="btn btn-quiet network-test" type="button">BAĞLANTIYI TEST ET</button>
           <a class="online-back" href="./">← Tek oyunculu oyuna dön</a>
         </div>
       </div>

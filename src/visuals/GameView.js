@@ -53,7 +53,7 @@ export class GameView {
     this.renderer.scene.remove(this.root);
     this.root.traverse((o) => {
       if (o.geometry) o.geometry.dispose();
-      if (o.material) for (const m of Array.isArray(o.material) ? o.material : [o.material]) m.dispose();
+      if (o.material) for (const m of Array.isArray(o.material) ? o.material : [o.material]) { m.map?.dispose(); m.dispose(); }
     });
   }
 }

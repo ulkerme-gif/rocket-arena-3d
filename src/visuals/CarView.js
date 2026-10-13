@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { ATLAS_SIZE, bodyUVGenerator, cleanSkin, drawSkinAtlas, isDefaultSkin } from './skins.js';
 
 const PALETTE = {
   blue: { body: 0x1f74e0, accent: 0x8fd0ff, trim: 0x0d2a52 },
@@ -20,6 +21,29 @@ function extrudeProfile(shape, width, bevel) {
   return g;
 }
 
+const BODY_PROFILE = [[-0.6, -0.12], [-0.62, 0.05], [-0.5, 0.1], [0.18, 0.085], [0.56, 0], [0.64, -0.05], [0.6, -0.12]];
+const BODY_WIDTH = 0.76;
+const BODY_BEVEL = 0.03;
+
+/** Body with UVs laid out for skins (sides, roof). Same shape as before. */
+function bodyGeometry() {
+  const xs = BODY_PROFILE.map((p) => p[0]);
+  const ys = BODY_PROFILE.map((p) => p[1]);
+  const m = BODY_BEVEL * 1.6; // bevel corners poke out a little further than the bevel size
+  const bounds = {
+    minX: Math.min(...xs) - m, maxX: Math.max(...xs) + m,
+    minY: Math.min(...ys) - m, maxY: Math.max(...ys) + m,
+    minZ: -BODY_BEVEL, maxZ: BODY_WIDTH + BODY_BEVEL,
+  };
+  const g = new THREE.ExtrudeGeometry(profile(BODY_PROFILE), {
+    depth: BODY_WIDTH, bevelEnabled: true, bevelThickness: BODY_BEVEL, bevelSize: BODY_BEVEL, bevelSegments: 2,
+    steps: 1, curveSegments: 4, UVGenerator: bodyUVGenerator(bounds),
+  });
+  g.translate(0, 0, -BODY_WIDTH / 2);
+  g.rotateY(Math.PI / 2);
+  return g;
+}
+
 /**
  * Original low-poly "Rocket Arena" car. Reads the CarController state each
  * frame (interpolated transform, wheel suspension/steer/spin, boost) and
@@ -29,16 +53,20 @@ export class CarView {
   constructor(car, parent) {
     this.car = car;
     const pal = PALETTE[car.team] ?? PALETTE.blue;
+    this.pal = pal;
+    this.skinKey = '';
+    this.skinTexture = null;
     this.group = new THREE.Group();
     this.group.name = `car-${car.id}`;
     const bodyMat = new THREE.MeshStandardMaterial({ color: pal.body, metalness: 0.45, roughness: 0.32 });
+    this.bodyMat = bodyMat;
     const trimMat = new THREE.MeshStandardMaterial({ color: pal.trim, metalness: 0.5, roughness: 0.45 });
     const glassMat = new THREE.MeshStandardMaterial({ color: 0x0c1622, metalness: 0.9, roughness: 0.15 });
     this.accentMat = new THREE.MeshStandardMaterial({ color: pal.accent, emissive: pal.accent, emissiveIntensity: 1.2 });
     const lightMat = new THREE.MeshStandardMaterial({ color: 0xffffff, emissive: 0xfff2c8, emissiveIntensity: 2 });
     const tailMat = new THREE.MeshStandardMaterial({ color: 0xff2a3a, emissive: 0xff2a3a, emissiveIntensity: 1.6 });
 
-    const body = new THREE.Mesh(extrudeProfile(profile([[-0.6, -0.12], [-0.62, 0.05], [-0.5, 0.1], [0.18, 0.085], [0.56, 0], [0.64, -0.05], [0.6, -0.12]]), 0.76, 0.03), bodyMat);
+    const body = new THREE.Mesh(bodyGeometry(), bodyMat);
     const cabin = new THREE.Mesh(extrudeProfile(profile([[-0.34, 0.08], [-0.18, 0.25], [0.1, 0.26], [0.32, 0.075]]), 0.56, 0.02), glassMat);
     const box = (w, h, d, mat, x, y, z) => {
       const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat);
@@ -106,6 +134,38 @@ export class CarView {
     this.flame.visible = s.isBoosting;
     if (s.isBoosting) this.flame.scale.set(1, 1, (s.isSupersonic ? 1.45 : 1) * (0.8 + Math.random() * 0.4));
     this.accentMat.emissiveIntensity = s.isSupersonic ? 2.4 : 1.2;
+  }
+
+  /**
+   * Applies a player's skin (null = plain team colour). The glowing side strips,
+   * spoiler and name tag keep the team colour, so teams stay recognisable.
+   */
+  setSkin(skin) {
+    const clean = skin ? cleanSkin(skin) : null;
+    const key = clean && !isDefaultSkin(clean) ? JSON.stringify(clean) : '';
+    if (key === this.skinKey) return;
+    this.skinKey = key;
+    this.skinTexture?.dispose();
+    this.skinTexture = null;
+    this.bodyMat.map = null;
+    this.bodyMat.color.set(this.pal.body);
+    if (key) {
+      const canvas = typeof document !== 'undefined' ? document.createElement('canvas') : null;
+      let ctx = null;
+      if (canvas) { canvas.width = ATLAS_SIZE; canvas.height = ATLAS_SIZE; }
+      try { ctx = canvas?.getContext?.('2d') ?? null; } catch { ctx = null; }
+      if (ctx) {
+        drawSkinAtlas(ctx, clean, this.car.team);
+        this.skinTexture = new THREE.CanvasTexture(canvas);
+        this.skinTexture.colorSpace = THREE.SRGBColorSpace;
+        this.skinTexture.anisotropy = 4;
+        this.bodyMat.map = this.skinTexture;
+        this.bodyMat.color.set(0xffffff);
+      } else if (clean.base !== 'team') {
+        this.bodyMat.color.set(clean.base); // no 2D canvas available: at least the colour
+      }
+    }
+    this.bodyMat.needsUpdate = true;
   }
 
   nozzleWorld(out) {
