@@ -54,5 +54,5 @@
 .roster li[data-host="true"]::after { content:' · kurucu'; color:#9cc6e3; font-weight:600; }
 
 .online-form .team-size button { margin-top:0; }
-.skin-link { display:flex; align-items:center; gap:8px; margin:2px 0 4px; }
-.skin-chip { width:16px; height:16px; border-radius:50%; border:2px solid #ffffff66; background:var(--chip, #1f74e0); flex:none; }
+.car-link { margin:2px 0 4px; }
+.car-link b { color:#eaf4fb; font-weight:800; }

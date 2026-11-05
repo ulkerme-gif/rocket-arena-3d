@@ -6,7 +6,7 @@ import { normalizeTeamSize, seatList } from '../game/teams.js';
 import { ZERO_INPUT, cleanInput, cleanName, asPacket } from './protocol.js';
 import { compactState, padLayoutOf } from './snapshot.js';
 import { PROTOCOL_VERSION } from './roomCode.js';
-import { cleanSkin, isDefaultSkin } from '../visuals/skins.js';
+import { cleanCar } from '../visuals/cars.js';
 import { MUTATOR, normalizeMutator } from '../game/mutators.js';
 
 const defaultNow = () => (typeof performance !== 'undefined' ? performance.now() : Date.now());
@@ -71,7 +71,7 @@ export class MatchHost {
     if (!packet || typeof packet.type !== 'string') return;
     const player = this.playerFor(handle);
     if (!player) {
-      if (packet.type === 'join') this.join(handle, packet.name, { version: packet.version, skin: packet.skin });
+      if (packet.type === 'join') this.join(handle, packet.name, { version: packet.version, car: packet.car });
       return;
     }
     const t = this.now();
@@ -83,7 +83,7 @@ export class MatchHost {
     else if (packet.type === 'leave') this.leave(handle);
   }
 
-  join(handle, name, { local = false, version = PROTOCOL_VERSION, skin = null } = {}) {
+  join(handle, name, { local = false, version = PROTOCOL_VERSION, car = null } = {}) {
     if (this.disposed || this.playerFor(handle)) return null;
     if (!local && version !== PROTOCOL_VERSION) {
       return this._reject(handle, 'Oyun sürümleri farklı. İki tablette de sayfayı yenileyip tekrar dene.');
@@ -96,7 +96,7 @@ export class MatchHost {
       id: seat.id,
       team: seat.team,
       name: cleanName(name),
-      skin: skin && !isDefaultSkin(skin) ? cleanSkin(skin) : null,
+      car: cleanCar(car),
       input: { ...ZERO_INPUT, sequence: 0 },
       lastSequence: 0,
       lastProcessedSequence: 0,
@@ -238,7 +238,7 @@ export class MatchHost {
   roster() {
     return this.seats.map((s) => {
       const p = this.players.find((x) => x.id === s.id);
-      return { seat: s.id, team: s.team, name: p ? p.name : null, host: !!p?.local, skin: p?.skin ?? null };
+      return { seat: s.id, team: s.team, name: p ? p.name : null, host: !!p?.local, car: p?.car ?? null };
     });
   }
 

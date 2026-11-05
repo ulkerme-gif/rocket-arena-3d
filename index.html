@@ -38,37 +38,22 @@
           <button id="play-match" type="button" class="btn btn-primary"><b id="play-match-label">1V1 · BOTLARA KARŞI</b> <span>→</span></button>
           <a href="./online.html" class="btn btn-secondary">ONLINE · ARKADAŞLARLA <span>🌐</span></a>
           <button id="play-training" type="button" class="btn btn-secondary">SERBEST ANTRENMAN <span>↗</span></button>
-          <button id="open-garage" type="button" class="btn btn-secondary">GARAJ · KAPLAMA <span>🎨</span></button>
+          <button id="open-garage" type="button" class="btn btn-secondary">GARAJ · ARABA SEÇ <span>🏎</span></button>
           <button id="open-settings" type="button" class="btn btn-quiet">⚙ OYUN AYARLARI</button>
         </div>
         <div class="menu-meta"><span>THREE.JS</span><i></i><span>RAPIER PHYSICS</span><i></i><span>120 HZ PHYSICS</span></div>
       </div>
       <div class="menu-side"><div class="big-number">01<span>/02</span></div><span>LOCAL<br/>ARCADE</span></div>
     </main>
-    <section id="garage" class="garage hidden" aria-label="Garaj: araba kaplaması">
+    <section id="garage" class="garage hidden" aria-label="Garaj: araba seçimi">
       <div class="garage-panel">
         <div class="eyebrow"><span class="signal"></span> GARAJ</div>
-        <h2>KAPLAMA</h2>
-        <p class="garage-sub">Online maçlarda herkes senin kaplamanı görür. Arabayı parmağınla döndürebilirsin.</p>
-        <span class="garage-label" id="garage-base-label">GÖVDE RENGİ</span>
-        <div id="garage-base" class="swatches" role="group" aria-labelledby="garage-base-label"></div>
-        <span class="garage-label" id="garage-pattern-label">DESEN</span>
-        <div id="garage-pattern" class="chips" role="group" aria-labelledby="garage-pattern-label"></div>
-        <span class="garage-label" id="garage-accent-label">DESEN RENGİ</span>
-        <div id="garage-accent" class="swatches" role="group" aria-labelledby="garage-accent-label"></div>
-        <label class="garage-label" for="garage-number">NUMARA</label>
-        <input id="garage-number" class="garage-number" inputmode="numeric" maxlength="2" placeholder="—" autocomplete="off"/>
-        <span class="garage-label" id="garage-art-label">ÇİZİM · YAN KAPILAR</span>
-        <canvas id="garage-art" class="garage-art" width="512" height="192" aria-labelledby="garage-art-label"></canvas>
-        <div id="garage-art-palette" class="swatches swatches-small" role="group" aria-label="Çizim rengi"></div>
-        <div class="garage-tools">
-          <button id="garage-art-erase" type="button" class="chip" aria-pressed="false">SİLGİ</button>
-          <button id="garage-art-clear" type="button" class="chip">ÇİZİMİ TEMİZLE</button>
-        </div>
+        <h2>ARABANI SEÇ</h2>
+        <p class="garage-sub">Online maçlarda herkes senin arabanı görür. Boyası takımına göre mavi ya da turuncu olur. Arabayı parmağınla döndürebilirsin.</p>
+        <div id="garage-cars" class="garage-cars" role="radiogroup" aria-label="Arabalar"></div>
         <div class="garage-actions">
-          <button id="garage-save" type="button" class="btn btn-primary">KAYDET <span>✓</span></button>
-          <button id="garage-cancel" type="button" class="btn btn-quiet">VAZGEÇ</button>
-          <button id="garage-reset" type="button" class="btn btn-quiet">VARSAYILANA DÖN</button>
+          <button id="garage-save" type="button" class="btn btn-primary"><b>BU ARABAYI SEÇ</b> <span>✓</span></button>
+          <button id="garage-cancel" type="button" class="btn btn-quiet">GERİ</button>
         </div>
       </div>
     </section>

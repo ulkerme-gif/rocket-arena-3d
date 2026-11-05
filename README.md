@@ -11,7 +11,7 @@ GitHub Pages'te yayınlanır. **Hiçbir sunucu gerekmez**: Raspberry Pi, Render 
 - **Botlara karşı:** 1v1, 2v2 veya 3v3. Takım arkadaşların ve rakiplerin bot. Seçim tarayıcıda hatırlanır.
 - **Online · arkadaşlarla:** Biri tabletinde 1v1 / 2v2 / 3v3 oda kurar, diğerleri 4 karakterlik oda koduyla (veya davet linkiyle) katılır. Boş yerlere bot geçer. Maç sırasında katılan biri bir botun yerine geçer; çıkan oyuncunun yerine bot geçer, maç durmaz.
 - **Serbest antrenman.**
-- **Garaj · kaplama:** Gövde rengi, desen (düz, şerit, iki renk, alev, dama, kamuflaj, şimşek), desen rengi, numara ve kapılara parmakla çizim. Canlı 3D önizleme; online maçlarda herkes senin kaplamanı görür. Takım rengi yandaki ışıklarda ve isim etiketinde kalır.
+- **Garaj · araba seçimi:** Nissan GT-R Nismo veya Porsche 718 Cayman GT4. Araba döner bir platformda canlı 3D gösterilir. Boya takım rengindedir (mavi / turuncu), online maçlarda herkes senin arabanı görür. Bütün arabaların çarpışma kutusu ve fiziği aynıdır; seçim sadece görünüşü değiştirir.
 - **İsim etiketleri:** Diğer arabaların üstünde oyuncu adı (botlarda `BOT`), takım rengiyle.
 
 ## Online nasıl çalışır

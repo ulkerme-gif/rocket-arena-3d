@@ -1,11 +1,12 @@
 import './styles/main.css';
 import RAPIER from '@dimforge/rapier3d-compat';
 import { App } from './App.js';
+import { loadCarModels } from './visuals/carModels.js';
 
 async function main() {
   const loading = document.getElementById('loading-screen');
   try {
-    await RAPIER.init();
+    await Promise.all([RAPIER.init(), loadCarModels()]);
     const app = new App(RAPIER);
     app.start();
     loading.classList.add('hidden');

@@ -12,10 +12,11 @@ import { Settings } from './ui/Settings.js';
 import { ArenaView } from './visuals/ArenaView.js';
 import { GameView } from './visuals/GameView.js';
 import { Renderer } from './visuals/Renderer.js';
-import { CarView } from './visuals/CarView.js';
+import { CarView, REST } from './visuals/CarView.js';
 import { NameTags } from './visuals/NameTags.js';
 import { makeStaticCar } from './visuals/staticCar.js';
-import { loadSkin, saveSkin } from './visuals/skins.js';
+import { botCar, loadCar, saveCar } from './visuals/cars.js';
+import { disposeTree } from './visuals/carModels.js';
 import { Garage } from './ui/Garage.js';
 
 const el = (id) => document.getElementById(id);
@@ -29,7 +30,7 @@ const _ballQuat = new THREE.Quaternion();
 const _focus = new THREE.Vector3(0, 2, 0);
 const TEAM_SIZE_KEY = 'rocket-arena-team-size';
 const _up = new THREE.Vector3(0, 1, 0);
-const PREVIEW_Y = 0.39; // resting height of a car on its wheels
+const PLATFORM_TOP = 0.04; // garage turntable height
 
 /** Browser-facing composition root. The simulation remains pure and headless-testable. */
 export class App {
@@ -64,9 +65,9 @@ export class App {
     this.preview = null;
     this.returnToOnline = false;
     this.garage = new Garage(document, {
-      onChange: (skin) => this.preview?.view.setSkin(skin),
-      onSave: (skin) => this.closeGarage(saveSkin(skin)),
-      onClose: () => this.closeGarage(null),
+      onChange: (carId) => this.preview?.view.setCar(carId),
+      onSave: (carId) => { saveCar(carId); this.closeGarage(); },
+      onClose: () => this.closeGarage(),
     });
     this._bindUI();
     this._renderSettings();
@@ -184,8 +185,8 @@ export class App {
     }
     this.matchLabel = mode === MODE.MATCH ? formatLabel(n) : 'FREE PLAY';
     document.body.classList.toggle('mode-training', mode === MODE.TRAINING);
-    this.view = new GameView(this.renderer, this.sim);
-    this.view.carViews.get('player')?.setSkin(loadSkin());
+    const myCar = loadCar();
+    this.view = new GameView(this.renderer, this.sim, { carFor: (id) => (id === 'player' ? myCar : botCar(id)) });
     this.tagObjects = new Map([...this.view.carViews].map(([id, view]) => [id, view.group]));
     this.nameTags.set(this.sim.cars.filter((c) => c.id !== 'player').map((c) => ({ id: c.id, text: 'BOT', team: c.team })));
     this.unsubs.push(
@@ -327,27 +328,32 @@ export class App {
     if (this.sim) return;
     show('main-menu', false);
     show('garage', true);
-    const skin = loadSkin();
-    this.garage.open(skin);
+    const carId = loadCar();
+    this.garage.open(carId);
     if (!this.preview) {
       const root = new THREE.Group();
       root.name = 'garage-preview';
       this.renderer.scene.add(root);
-      const car = makeStaticCar({ id: 'preview', team: TEAM.BLUE, position: { x: 0, y: PREVIEW_Y, z: 0 } });
-      for (const wheel of car.wheels) wheel.suspension = 0.14;
-      const view = new CarView(car, root);
+      // Turntable: a dark disc with a lime rim; the car stands on it.
+      const platform = new THREE.Mesh(new THREE.CylinderGeometry(1.15, 1.2, PLATFORM_TOP, 64),
+        new THREE.MeshStandardMaterial({ color: 0x0d1c2a, metalness: 0.6, roughness: 0.35 }));
+      platform.position.y = PLATFORM_TOP / 2;
+      platform.receiveShadow = true;
+      const rim = new THREE.Mesh(new THREE.TorusGeometry(1.17, 0.012, 8, 96).rotateX(Math.PI / 2), new THREE.MeshBasicMaterial({ color: 0xc4fc40 }));
+      rim.position.y = PLATFORM_TOP + 0.002;
+      root.add(platform, rim);
+      const car = makeStaticCar({ id: 'preview', team: TEAM.BLUE, position: { x: 0, y: REST.height + PLATFORM_TOP, z: 0 } });
+      for (const wheel of car.wheels) wheel.suspension = REST.suspension;
+      const view = new CarView(car, root, carId);
       this.preview = { root, car, view, angle: 2.3, drag: null };
     }
-    this.preview.view.setSkin(skin);
+    this.preview.view.setCar(carId);
   }
 
   closeGarage() {
     if (this.preview) {
       this.renderer.scene.remove(this.preview.root);
-      this.preview.root.traverse((o) => {
-        o.geometry?.dispose();
-        if (o.material) for (const m of Array.isArray(o.material) ? o.material : [o.material]) { m.map?.dispose(); m.dispose(); }
-      });
+      disposeTree(this.preview.root);
       this.preview = null;
     }
     show('garage', false);
@@ -370,8 +376,9 @@ export class App {
     const tanHalf = Math.tan(THREE.MathUtils.degToRad(cam.fov) / 2);
     const offX = sheet ? 0 : -(Math.min(panel.right, W * 0.7) / W) * dist * tanHalf * cam.aspect;
     const offY = sheet ? -(Math.min(H - panel.top, H * 0.7) / H) * dist * tanHalf : 0;
-    cam.position.set(offX, PREVIEW_Y + 0.75 + offY, dist);
-    cam.lookAt(offX, PREVIEW_Y + 0.05 + offY, 0);
+    const mid = PLATFORM_TOP + 0.24; // halfway up the car
+    cam.position.set(offX, mid + 0.8 + offY, dist);
+    cam.lookAt(offX, mid + offY, 0);
   }
 
   _settingsOpen() { return !el('settings-menu').classList.contains('hidden'); }

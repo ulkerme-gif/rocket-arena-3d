@@ -20,7 +20,8 @@ import { PROTOCOL_VERSION, codeFromLocation, inviteLink, normalizeRoomCode, room
 import { formatLabel, normalizeTeamSize } from './game/teams.js';
 import { mutatorLabel, normalizeMutator } from './game/mutators.js';
 import { NameTags } from './visuals/NameTags.js';
-import { loadSkin } from './visuals/skins.js';
+import { botCar, carInfo, loadCar } from './visuals/cars.js';
+import { loadCarModels } from './visuals/carModels.js';
 
 const el = id => document.getElementById(id);
 const show = (id, visible) => el(id).classList.toggle('hidden', !visible);
@@ -84,8 +85,8 @@ class OnlineApp {
       event.target.value = this.mutator;
       el('room-mutator-name').textContent = mutatorLabel(this.mutator);
     });
-    const skin = loadSkin();
-    el('skin-chip').style.setProperty('--chip', skin.base === 'team' ? 'linear-gradient(90deg,#1f74e0 50%,#f0661a 50%)' : skin.base);
+    el('my-car').textContent = carInfo(loadCar()).name;
+    this.modelsReady = loadCarModels(); // needed once a match starts; never blocks the lobby
     const invited = codeFromLocation();
     if (invited) {
       el('room-code').value = invited;
@@ -174,7 +175,7 @@ class OnlineApp {
     this.status('Oda hazırlanıyor…');
     let room = null;
     try {
-      const [RAPIER, Peer] = await Promise.all([this.loadRapier(), loadPeerClass()]);
+      const [RAPIER, Peer] = await Promise.all([this.loadRapier(), loadPeerClass(), this.modelsReady]);
       if (token !== this.sessionToken) return;
       room = await HostedRoom.open({ Peer });
       if (token !== this.sessionToken) { room.close(); return; }
@@ -185,7 +186,7 @@ class OnlineApp {
       this.session = { room, match, local };
       this.roomCode = room.code;
       room.onConnection = link => this.acceptGuest(link);
-      match.join(local, name, { local: true, skin: loadSkin() });
+      match.join(local, name, { local: true, car: loadCar() });
       this.accumulator = 0;
       this.showRoomCard();
     } catch (error) {
@@ -291,7 +292,7 @@ class OnlineApp {
     this.setBusy(true);
     this.status('Eşleştirme servisine bağlanılıyor…');
     try {
-      const Peer = await loadPeerClass();
+      const [Peer] = await Promise.all([loadPeerClass(), this.modelsReady]);
       if (token !== this.sessionToken) return;
       const connection = await joinHostedRoom({ Peer, code, onProgress: stage => {
         if (token !== this.sessionToken) return;
@@ -304,7 +305,7 @@ class OnlineApp {
       this.roomCode = code;
       connection.link.onMessage = data => { if (this.session?.connection === connection) this.handleMessage(data); };
       connection.link.onClose = reason => { if (this.session?.connection === connection) this.lostConnection(reason); };
-      connection.link.send({ type: 'join', name, version: PROTOCOL_VERSION, skin: loadSkin() });
+      connection.link.send({ type: 'join', name, version: PROTOCOL_VERSION, car: loadCar() });
       this.status(`${code} odasına bağlandın. Maç hazırlanıyor…`);
     } catch (error) {
       if (token !== this.sessionToken) return;
@@ -410,13 +411,14 @@ class OnlineApp {
     }
   }
 
-  /** Names above other cars and everyone's skins, from the latest roster. */
+  /** Names above other cars and everyone's car model, from the latest roster. Bots: by seat. */
   applyRoster() {
     const seats = this.roster?.seats ?? [];
     this.nameTags.set(seats.filter(s => s.seat !== this.myId).map(s => ({ id: s.seat, text: s.name ?? 'BOT', team: s.team })));
     for (const seat of seats) {
-      if (this.role === 'host') this.gameView?.carViews.get(seat.seat)?.setSkin(seat.skin);
-      else this.view?.setSkin(seat.seat, seat.skin);
+      const car = seat.car ?? botCar(seat.seat);
+      if (this.role === 'host') this.gameView?.carViews.get(seat.seat)?.setCar(car);
+      else this.view?.setCar(seat.seat, car);
     }
   }
 

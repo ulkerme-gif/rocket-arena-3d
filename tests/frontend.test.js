@@ -12,7 +12,7 @@ const required = ['index.html', 'src/main.js', 'src/App.js', 'src/styles/main.cs
 test('browser entrypoint files exist', () => {
   for (const file of required) assert.ok(existsSync(resolve(project, file)), `Missing ${file}`);
   assert.match(read('index.html'), /src="\/src\/main\.js"/);
-  assert.match(read('src/main.js'), /await RAPIER\.init\(\)/);
+  assert.match(read('src/main.js'), /await Promise\.all\(\[RAPIER\.init\(\), loadCarModels\(\)\]\)/, 'physics and car models load before the game starts');
 });
 
 test('all DOM ids referenced in App exist in index.html', () => {

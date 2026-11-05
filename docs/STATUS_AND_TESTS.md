@@ -1,5 +1,11 @@
 # ROCKET ARENA 3D — STATUS & TEST REPORT (2026-10-12)
 
+## Gerçek arabalar + yeni garaj (2026-11-05)
+- Eski düşük poligonlu araba ve kaplama / çizim düzenleyicisi kaldırıldı. Yerine iki gerçek model: Nissan GT-R Nismo (1,37 M → ~18,6 bin üçgen, 391 KB) ve Porsche 718 Cayman GT4 (2,9 M → ~41 bin üçgen, 735 KB), `public/cars/*.glb`.
+- Tekerlekler ayrı parçalar: dönme, direksiyon ve süspansiyon fizikten okunur; kaliperler dönmez. Boya takım rengindedir.
+- Garaj artık araba seçici (liste + döner platform). Seçim online'da `car` olarak gider; protokol sürümü 4.
+- Yeni testler: `cars` (dosya boyutu, üçgen ve çizim çağrısı bütçesi, tekerlek konumları, takım boyası, lastiklerin yere değmesi, paylaşılan modellerin silinmemesi, yedek kutu araba). `online-integration`: roster'da araba seçimi.
+
 ## Bu sürümde
 - **Sunucusuz online:** Raspberry Pi / Render / WebSocket sunucusu kaldırıldı. Odayı kuran tablet maçı çalıştırır (`src/net/MatchHost.js`), diğerleri WebRTC ile 4 karakterlik oda koduyla bağlanır (`src/net/PeerTransport.js`, PeerJS).
 - **1v1 / 2v2 / 3v3:** Hem botlara karşı hem online. Boş koltuklara bot; maç ortasında katılan botun yerine geçer, çıkanın yerine bot geçer. Botlar takımda sırayla oynar (en yakın atak, diğerleri destek / kale).

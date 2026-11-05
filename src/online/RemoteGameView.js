@@ -4,6 +4,8 @@ import { BallView } from '../visuals/BallView.js';
 import { BoostPadView } from '../visuals/BoostPadView.js';
 import { makeStaticCar } from '../visuals/staticCar.js';
 import { CONFIG } from '../config/index.js';
+import { botCar } from '../visuals/cars.js';
+import { disposeTree } from '../visuals/carModels.js';
 import { SnapshotTimeline } from './SnapshotTimeline.js';
 
 const _from = new THREE.Quaternion();
@@ -30,7 +32,7 @@ export class RemoteGameView {
     for (const item of snapshot.cars) {
       const car = makeStaticCar(item);
       this.cars.set(item.id, car);
-      this.views.set(item.id, new CarView(car, this.root));
+      this.views.set(item.id, new CarView(car, this.root, botCar(item.id)));
     }
     this.ball = new BallView(snapshot.ball.radius, this.root);
     this.ballRadius = snapshot.ball.radius;
@@ -48,7 +50,7 @@ export class RemoteGameView {
   /** Kept for the camera: true while the ball is in play. */
   get ballTarget() { return { enabled: this.ballEnabled }; }
 
-  setSkin(id, skin) { this.views.get(id)?.setSkin(skin); }
+  setCar(id, carId) { this.views.get(id)?.setCar(carId); }
 
   onSnapshot(snapshot) {
     const previous = this.lastSnapshot;
@@ -126,10 +128,7 @@ export class RemoteGameView {
 
   dispose() {
     this.renderer.scene.remove(this.root);
-    this.root.traverse(o => {
-      o.geometry?.dispose();
-      if (o.material) for (const m of Array.isArray(o.material) ? o.material : [o.material]) { m.map?.dispose(); m.dispose(); }
-    });
+    disposeTree(this.root);
     this.timeline.clear();
     this.cars.clear();
     this.views.clear();

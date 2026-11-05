@@ -57,13 +57,13 @@ git push
 
 Not: Bu bilgiler yayınlanan sitede görünür; tarayıcı oyunlarında bu kaçınılmaz. Biri kotanı kullanırsa Dashboard'da **Refresh Credentials** ile yenileyip dosyaya tekrar yaz.
 
-## Garaj: kendi kaplaman
+## Garaj: araba seçimi
 
-Ana menüde **GARAJ · KAPLAMA** (online lobisinde **Kaplamanı düzenle**):
-- **Gövde rengi** (TAKIM RENGİ seçersen hangi takımdaysan o renk olur), **desen**, **desen rengi**, **numara**.
-- **Çizim · yan kapılar**: renk seç, kutuların üstünde parmağını gezdir. Aynı renkte bir kareye dokunmak onu siler; **SİLGİ** ve **ÇİZİMİ TEMİZLE** de var.
-- Araba sağda canlı döner; parmağınla çevirebilirsin. **KAYDET** deyince bu tablette saklanır.
-- Online'da odaya girerken kaplaman herkese gider. Takımını belli etmek için yandaki ışıklar ve isim etiketi takım renginde kalır.
+Ana menüde **GARAJ · ARABA SEÇ** (online lobisinde **Araban: … · garajda değiştir**):
+- Soldan arabayı seç: **Nissan GT-R Nismo** veya **Porsche 718 Cayman GT4**. Araba sağdaki döner platformda görünür; parmağınla çevirebilirsin.
+- **BU ARABAYI SEÇ** deyince bu tablette saklanır. **GERİ** değişikliği kaydetmeden çıkar.
+- Boya takım renginde olur (mavi / turuncu). Online'da herkes senin arabanı görür.
+- Arabaların hepsi aynı fizik ve çarpışma kutusuyla oynar; fark sadece görünüşte.
 
 ## Online nasıl oynanır
 

@@ -256,21 +256,18 @@ test('garbage packets and floods are ignored without crashing the host', async (
   match.dispose();
 });
 
-test('skins travel with the join and reach everyone through the roster; junk is cleaned', async () => {
+test('car choices travel with the join and reach everyone through the roster; junk becomes the default car', async () => {
   const { match, host } = await hostedRoom(2);
-  const art = '0'.repeat(30) + '3c' + '0'.repeat(352);
-  const painter = handle('painter');
-  match.handlePacket(painter, { type: 'join', name: 'Ressam', version: PROTOCOL_VERSION,
-    skin: { v: 1, base: '#FF5FA8', accent: '#ffffff', pattern: 'flames', number: '7', art } });
+  const porsche = handle('porsche');
+  match.handlePacket(porsche, { type: 'join', name: 'Porsche', version: PROTOCOL_VERSION, car: 'porsche' });
   const sneaky = handle('sneaky');
-  match.handlePacket(sneaky, { type: 'join', name: 'X', version: PROTOCOL_VERSION,
-    skin: { base: 'url(javascript:alert(1))', pattern: '<img>', number: '12345', art: 'zz'.repeat(500), extra: 'x'.repeat(5000) } });
+  match.handlePacket(sneaky, { type: 'join', name: 'X', version: PROTOCOL_VERSION, car: { evil: 'x'.repeat(5000) } });
   const seats = host.last('roster').seats;
   const bySeat = Object.fromEntries(seats.map((s) => [s.seat, s]));
-  assert.deepEqual(bySeat['orange-1'].skin, { v: 1, base: '#ff5fa8', accent: '#ffffff', pattern: 'flames', number: '7', art });
-  assert.equal(bySeat['blue-2'].skin, null, 'an all-invalid skin falls back to the plain team look');
-  assert.equal(bySeat['blue-1'].skin, null, 'host without a custom skin');
-  assert.equal(bySeat['orange-2'].skin, null, 'bots have no skin');
+  assert.equal(bySeat['orange-1'].car, 'porsche');
+  assert.equal(bySeat['blue-2'].car, 'gtr', 'an invalid choice falls back to the default car');
+  assert.equal(bySeat['blue-1'].car, 'gtr', 'host without a stored choice drives the default car');
+  assert.equal(bySeat['orange-2'].car, null, 'bot seats carry no choice (every tablet picks the same car by seat)');
   assert.ok(JSON.stringify(host.last('roster')).length < 4000, 'roster stays small');
   match.dispose();
 });

@@ -99,31 +99,31 @@ body.mode-training .touch-training{display:flex}
 .name-tag[data-team="blue"]{border-bottom-color:#3d9bff}
 .name-tag[data-team="orange"]{border-bottom-color:#ff8a32}
 
-/* GARAJ (skin editor): panel left in landscape, bottom sheet in portrait; the 3D car stays visible. */
+/* GARAJ (car picker): panel left in landscape, bottom sheet in portrait; the car turns on its platform beside it. */
 .garage{position:absolute;inset:0;z-index:30;pointer-events:none}
-.garage-panel{pointer-events:auto;position:absolute;left:0;top:0;bottom:0;width:min(440px,100%);overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;
+.garage-panel{pointer-events:auto;position:absolute;left:0;top:0;bottom:0;width:min(420px,100%);overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;
+  display:flex;flex-direction:column;
   padding:calc(22px + env(safe-area-inset-top)) 26px calc(24px + env(safe-area-inset-bottom)) calc(26px + env(safe-area-inset-left));
   background:linear-gradient(90deg,#030a13f7 0%,#030b16ec 82%,#030b1600)}
-.garage-panel h2{font-size:64px;line-height:.9;margin:10px 0 6px;letter-spacing:-.02em}
-.garage-sub{color:#9fb8ca;font-size:13px;line-height:1.5;margin:0 0 6px;max-width:36ch}
-.garage-label{display:block;margin:14px 0 7px;color:#9bbacc;font:800 11px/1.4 system-ui,sans-serif;letter-spacing:.15em}
-.swatches{display:flex;flex-wrap:wrap;gap:7px}
-.swatch{width:38px;height:38px;border-radius:50%;border:2px solid #ffffff33;background:var(--swatch);padding:0;touch-action:manipulation}
-.swatch-wide{width:auto;padding:0 13px;border-radius:19px;color:#fff;font:800 12px system-ui,sans-serif;letter-spacing:.06em;text-shadow:0 1px 3px #000}
-.swatches-small{gap:5px}
-.swatches-small .swatch{width:30px;height:30px}
-.swatch[aria-pressed="true"]{border-color:#c4fc40;box-shadow:0 0 0 3px #c4fc4060}
-.chips{display:flex;flex-wrap:wrap;gap:6px}
-.chip{min-height:36px;padding:0 12px;border:1px solid #748a9d66;border-radius:5px;background:#0f2334e0;color:#c6d8e5;
-  font:800 16px/1 'Barlow Condensed','Arial Narrow',system-ui,sans-serif;letter-spacing:.06em;touch-action:manipulation}
-.chip[aria-pressed="true"]{background:#f1f8ff;color:#0c1920;border-color:#f1f8ff}
-.garage-number{width:92px;background:#091e2f;border:1px solid #3b627d;color:#fff;border-radius:8px;padding:8px 12px;text-align:center;
-  font:800 26px/1 'Barlow Condensed','Arial Narrow',system-ui,sans-serif}
-.garage-art{display:block;width:100%;aspect-ratio:32/12;border-radius:6px;border:1px solid #3b627d;touch-action:none;cursor:crosshair;margin-bottom:8px;pointer-events:auto}
-.garage-tools{display:flex;gap:6px;margin-top:8px}
-.garage-actions{display:flex;flex-direction:column;gap:6px;margin-top:18px}
+.garage-panel h2{font-size:64px;line-height:.9;margin:10px 0 8px;letter-spacing:-.02em}
+.garage-sub{color:#9fb8ca;font-size:13px;line-height:1.5;margin:0 0 18px;max-width:36ch}
+.garage-cars{display:flex;flex-direction:column;gap:10px}
+.car-card{position:relative;display:grid;gap:2px;text-align:left;padding:14px 18px 14px 22px;border:1px solid #748a9d44;border-radius:6px;
+  background:#0d2031d9;color:#eaf4fb;touch-action:manipulation;transition:background .12s,border-color .12s}
+.car-card::before{content:'';position:absolute;left:0;top:10px;bottom:10px;width:4px;border-radius:2px;background:transparent;transition:background .12s}
+.car-card:hover{border-color:#a9c6d888}
+.car-card:focus-visible{outline:3px solid #baff39;outline-offset:3px}
+.car-card[aria-checked="true"]{background:#13304a;border-color:#c4fc40aa}
+.car-card[aria-checked="true"]::before{background:#c4fc40}
+.car-maker{color:#9bbacc;font:600 13px/1.3 system-ui,sans-serif}
+.car-name{font:900 34px/1 'Barlow Condensed','Arial Narrow',Impact,sans-serif;letter-spacing:.01em}
+.car-mine{display:none;color:#c4fc40;font:700 12px/1.4 system-ui,sans-serif;margin-top:4px}
+.car-card.is-mine .car-mine{display:block}
+.garage-actions{display:flex;flex-direction:column;gap:6px;margin-top:auto;padding-top:22px}
 .garage-actions .btn{min-height:50px}
+.garage-actions .btn-primary.is-current{background:#1d3a52;color:#c4fc40;border-color:#c4fc4066}
 @media (orientation:portrait),(max-width:700px){
-  .garage-panel{top:auto;width:100%;height:58vh;padding-top:16px;background:#030a13f2;border-top:1px solid #3b627d88}
+  .garage-panel{top:auto;width:100%;height:52vh;padding-top:16px;background:#030a13f2;border-top:1px solid #3b627d88}
   .garage-panel h2{font-size:42px}
+  .car-name{font-size:28px}
 }

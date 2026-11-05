@@ -4,6 +4,8 @@ import { BallView } from './BallView.js';
 import { BoostPadView } from './BoostPadView.js';
 import { Effects } from './Effects.js';
 import { TEAM_COLORS } from './ArenaView.js';
+import { botCar } from './cars.js';
+import { disposeTree } from './carModels.js';
 
 const _p = new THREE.Vector3();
 
@@ -12,14 +14,15 @@ const _p = new THREE.Vector3();
  * Read-only consumer of simulation state and events.
  */
 export class GameView {
-  constructor(renderer, sim) {
+  /** carFor(carId) -> car model id; defaults to the bots' choice for every seat. */
+  constructor(renderer, sim, { carFor = botCar } = {}) {
     this.renderer = renderer;
     this.sim = sim;
     this.time = 0;
     this.root = new THREE.Group();
     this.root.name = 'session';
     renderer.scene.add(this.root);
-    this.carViews = new Map(sim.cars.map((car) => [car.id, new CarView(car, this.root)]));
+    this.carViews = new Map(sim.cars.map((car) => [car.id, new CarView(car, this.root, carFor(car.id))]));
     this.ballView = new BallView(sim.ball.radius, this.root);
     this.padsView = new BoostPadView(sim.boostPads.pads, this.root);
     this.effects = new Effects(this.root);
@@ -51,9 +54,6 @@ export class GameView {
   dispose() {
     this._unsubs.forEach((u) => u());
     this.renderer.scene.remove(this.root);
-    this.root.traverse((o) => {
-      if (o.geometry) o.geometry.dispose();
-      if (o.material) for (const m of Array.isArray(o.material) ? o.material : [o.material]) { m.map?.dispose(); m.dispose(); }
-    });
+    disposeTree(this.root);
   }
 }
