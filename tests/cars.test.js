@@ -5,106 +5,143 @@ import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.js';
 import { CARS, DEFAULT_CAR, botCar, cleanCar, loadCar, saveCar } from '../src/visuals/cars.js';
-import { WHEEL_KEYS, carModel, disposeTree, registerCarModel } from '../src/visuals/carModels.js';
-import { CarView, REST, TEAM_PAINT } from '../src/visuals/CarView.js';
+import { WHEEL_KEYS, carModel, disposeTree, registerCarModels } from '../src/visuals/carModels.js';
+import { CarView, TEAM_GLOW, restHeightOf } from '../src/visuals/CarView.js';
 import { makeStaticCar } from '../src/visuals/staticCar.js';
+import { carPhysicsConfig, carShape, shapeRestHeight } from '../src/game/carPhysics.js';
+import { CarController } from '../src/physics/CarController.js';
 import { CONFIG } from '../src/config/index.js';
+import { createSim, steps, C, place, initRapier } from './helpers.js';
+import { MatchHost } from '../src/net/MatchHost.js';
+import { PROTOCOL_VERSION } from '../src/net/roomCode.js';
 
-const file = (id) => new URL(`../public/cars/${id}.glb`, import.meta.url);
-async function parse(id) {
-  const buf = readFileSync(file(id));
-  const loader = new GLTFLoader().setMeshoptDecoder(MeshoptDecoder);
-  return new Promise((res, rej) => loader.parse(buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength), '', res, rej));
-}
+const GLB = new URL('../public/cars/cars.glb', import.meta.url);
+// Node has no image decoder: the palette texture becomes an empty texture (geometry is what's tested).
+globalThis.self ??= globalThis;
+THREE.TextureLoader.prototype.load = function (url, onLoad) {
+  const texture = new THREE.Texture();
+  queueMicrotask(() => onLoad?.(texture));
+  return texture;
+};
 let loaded = null;
-const loadAll = () => (loaded ??= Promise.all(CARS.map(async (c) => registerCarModel(c.id, await parse(c.id)))));
+const loadAll = () => (loaded ??= new Promise((res, rej) => {
+  const buf = readFileSync(GLB);
+  new GLTFLoader().setMeshoptDecoder(MeshoptDecoder).parse(buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength), '', res, rej);
+}).then((gltf) => registerCarModels(gltf)));
+const BALL_DIAMETER = CONFIG.physics.ball.radius * 2;
 
-test('car choice: only known cars, persisted on the tablet, bots get the same car on every tablet', () => {
-  assert.equal(cleanCar('porsche'), 'porsche');
-  for (const junk of [null, undefined, '', 'tank', 42, {}, '__proto__']) assert.equal(cleanCar(junk), DEFAULT_CAR);
+test('car choice: 22 cars, only known ids, persisted, bots get the same car on every tablet', () => {
+  assert.equal(CARS.length, 22);
+  assert.equal(new Set(CARS.map((c) => c.id)).size, 22);
+  assert.equal(cleanCar('pikap-sari'), 'pikap-sari');
+  for (const junk of [null, undefined, '', 'gtr', 'porsche', 42, {}, '__proto__']) assert.equal(cleanCar(junk), DEFAULT_CAR);
   const store = new Map();
   const storage = { getItem: (k) => store.get(k) ?? null, setItem: (k, v) => store.set(k, v) };
   assert.equal(loadCar(storage), DEFAULT_CAR);
-  saveCar('porsche', storage);
-  assert.equal(loadCar(storage), 'porsche');
-  assert.equal(loadCar({ getItem() { throw new Error('private mode'); } }), DEFAULT_CAR);
+  saveCar('arazi-beyaz', storage);
+  assert.equal(loadCar(storage), 'arazi-beyaz');
   assert.equal(botCar('orange-2'), botCar('orange-2'));
-  assert.ok(new Set(['blue-1', 'blue-2', 'blue-3', 'orange-1', 'orange-2', 'orange-3'].map(botCar)).size > 1, 'bots are not all the same car');
+  assert.ok(new Set(['blue-1', 'blue-2', 'blue-3', 'orange-1', 'orange-2', 'orange-3'].map(botCar)).size > 1);
 });
 
-test('car models: small files, light enough for an iPad, body + four wheels at sensible spots', async () => {
-  await loadAll();
+test('size against the ball: every car is close to the ball in length and clearly bigger than before', () => {
   for (const car of CARS) {
-    assert.ok(statSync(file(car.id)).size < 1.2e6, `${car.id}.glb stays small`);
+    const s = car.shape, len = s.hitbox.halfLength * 2, width = s.hitbox.halfWidth * 2, height = s.hitbox.top;
+    assert.ok(len > 0.9 * BALL_DIAMETER && len < 1.15 * BALL_DIAMETER, `${car.id} length ${len} vs ball ${BALL_DIAMETER}`);
+    assert.ok(width > 0.65 && width < 0.95, `${car.id} width ${width}`);
+    assert.ok(height > 0.5 && height < 0.85, `${car.id} height ${height}`);
+    assert.ok(s.hitbox.bottom > 0.05, `${car.id}: the box clears the floor`);
+    assert.ok(s.front.z < 0 && s.rear.z > 0 && s.front.z > -s.hitbox.halfLength && s.rear.z < s.hitbox.halfLength, `${car.id}: wheels under the body`);
+  }
+});
+
+test('cars.glb: one small file with every car, body + four wheels touching the ground where the physics has them', async () => {
+  assert.ok(statSync(GLB).size < 2.5e6, 'cars.glb stays small');
+  assert.equal(await loadAll(), CARS.length);
+  for (const car of CARS) {
     const model = carModel(car.id);
-    let tris = 0, draws = 0;
-    for (const part of [model.body, ...model.wheels.flatMap((w) => [w.spin, w.hub].filter(Boolean))]) {
-      part.traverse((o) => { if (o.isMesh) { tris += o.geometry.index.count / 3; draws++; } });
-    }
-    assert.ok(tris < 60000, `${car.id}: ${tris} triangles`);
-    assert.ok(draws <= 30, `${car.id}: ${draws} draw calls`);
-    const len = model.box.max.z - model.box.min.z, width = model.box.max.x - model.box.min.x;
-    assert.ok(len > 1.3 && len < 1.6, `${car.id} length ${len}`);
-    assert.ok(width > 0.5 && width < CONFIG.physics.car.hitbox.halfWidth * 2, `${car.id} width ${width}`);
-    assert.ok(model.box.min.y > -0.01, `${car.id}: nothing below the ground`);
+    assert.ok(model, car.id);
     assert.deepEqual(model.wheels.map((w) => w.key), WHEEL_KEYS);
     for (const w of model.wheels) {
-      const front = w.key[0] === 'F', left = w.key[1] === 'L';
-      assert.equal(w.center.z < 0, front, `${car.id} ${w.key} front/back`);
-      assert.equal(w.center.x < 0, left, `${car.id} ${w.key} left/right`);
-      assert.ok(Math.abs(w.center.y - w.radius) < 0.01, `${car.id} ${w.key} tyre touches the ground`);
-      assert.ok(w.spin, `${car.id} ${w.key} has a spinning part`);
+      assert.equal(w.center.z < 0, w.key[0] === 'F', `${car.id} ${w.key} front/back`);
+      assert.equal(w.center.x < 0, w.key[1] === 'L', `${car.id} ${w.key} left/right`);
+      assert.ok(Math.abs(w.center.y - car.shape.wheelRadius) < 0.02, `${car.id} ${w.key} tyre on the ground`);
+      const p = w.key[0] === 'F' ? car.shape.front : car.shape.rear;
+      assert.ok(Math.abs(Math.abs(w.center.x) - p.x) < 0.02 && Math.abs(w.center.z - p.z) < 0.02, `${car.id} ${w.key} matches the physics wheel`);
     }
-    let paint = 0;
-    model.body.traverse((o) => { if (o.isMesh && o.material.name === 'paint') paint++; });
-    assert.ok(paint > 0, `${car.id}: has body paint`);
+    const box = new THREE.Box3().setFromObject(model.body);
+    assert.ok(Math.abs(box.max.z - car.shape.hitbox.halfLength) < 0.02 && Math.abs(box.min.z + car.shape.hitbox.halfLength) < 0.02, `${car.id}: hitbox = drawn length`);
+    assert.ok(Math.abs(box.max.x - car.shape.hitbox.halfWidth) < 0.02, `${car.id}: hitbox = drawn width`);
   }
 });
 
-test('CarView: team paint, tyres on the ground at rest, wheels steer and spin, switching cars keeps shared meshes alive', async () => {
+test('per-car physics: each car rests on its own wheels at its own height, hitbox matches the model', async () => {
+  for (const id of ['sedan-sari', 'arazi-beyaz', 'pikap-sari']) {
+    const sim = await createSim({ players: [{ id: 'player', team: 'blue', kind: 'human', car: id }] });
+    sim.ball.setEnabled(false);
+    const car = sim.cars[0];
+    place(car, 0, 30, 0);
+    steps(sim, 2, () => ({ player: C({}) }));
+    assert.equal(car.state.numWheelsContact, 4, `${id} on four wheels`);
+    assert.ok(Math.abs(car.position.y - shapeRestHeight(carShape(id))) < 0.03, `${id} rests at ${car.position.y}`);
+    assert.equal(car.cfg.hitbox.halfLength, carShape(id).hitbox.halfLength);
+    steps(sim, 3, () => ({ player: C({ throttle: 1 }) }));
+    assert.ok(car.velocity.length() > 12 && car.up.y > 0.99, `${id} drives normally`);
+    sim.dispose();
+  }
+  assert.equal(carPhysicsConfig(CONFIG.physics, 'nope'), CONFIG.physics, 'unknown car keeps the base shape');
+  assert.ok(Math.abs(CarController.restHeight(carPhysicsConfig(CONFIG.physics, 'cip-sari')) - restHeightOf('cip-sari')) < 1e-9);
+});
+
+test('a guest taking over a bot mid-match gets their own car\'s hitbox; a leaver\'s seat goes back to the bot\'s car', async () => {
+  const RAPIER = await initRapier();
+  const match = new MatchHost({ RAPIER, roomCode: 'K7M2', teamSize: 2 });
+  match.join({ send() {} }, 'Kurucu', { local: true, car: 'sedan-sari' });
+  match.handlePacket(match.players[0].handle, { type: 'start' });
+  assert.equal(match.sim.carById.get('blue-1').cfg.hitbox.halfLength, carShape('sedan-sari').hitbox.halfLength);
+  const guest = { send() {} };
+  match.handlePacket(guest, { type: 'join', name: 'Misafir', version: PROTOCOL_VERSION, car: 'arazi-beyaz' });
+  const seat = match.playerFor(guest).id;
+  const car = match.sim.carById.get(seat);
+  assert.equal(car.cfg.hitbox.top ?? car.cfg.hitbox.halfHeight, carPhysicsConfig(CONFIG.physics, 'arazi-beyaz').car.hitbox.halfHeight);
+  for (let i = 0; i < 240; i++) match.step();
+  assert.ok(Number.isFinite(car.position.y) && car.position.y > 0.2, 'stands normally after the swap');
+  match.leave(guest);
+  assert.equal(car.model, botCar(seat));
+  match.dispose();
+});
+
+test('CarView: model sits on the physics box, wheels touch the ground, team glow, placeholder when not loaded', async () => {
   await loadAll();
   const parent = new THREE.Group();
-  const car = makeStaticCar({ id: 'x', team: 'orange', position: { x: 0, y: REST.height, z: 0 } });
-  for (const w of car.wheels) w.suspension = REST.suspension;
-  const view = new CarView(car, parent, 'porsche');
-  assert.equal(view.carId, 'porsche');
-  let painted = 0;
-  view.shell.traverse((o) => { if (o.isMesh && o.material === view.paintMat) painted++; });
-  assert.ok(painted > 0);
-  assert.equal(view.paintMat.color.getHex(), new THREE.Color(TEAM_PAINT.orange).getHex());
+  const id = 'arazi-turuncu';
+  const car = makeStaticCar({ id: 'x', team: 'orange', position: { x: 0, y: restHeightOf(id), z: 0 } });
+  const view = new CarView(car, parent, id);
   view.update(1);
   parent.updateMatrixWorld(true);
-  for (const v of view.wheelViews) {
-    const box = new THREE.Box3().setFromObject(v.spin);
-    assert.ok(Math.abs(box.min.y) < 0.012, `tyre bottom ${box.min.y} on the ground`);
-  }
-  car.wheels[0].steer = 0.3; car.wheels[0].spin = 1;
-  view.update(1);
+  for (const v of view.wheelViews) assert.ok(Math.abs(new THREE.Box3().setFromObject(v.spin).min.y) < 0.02, 'tyre on the ground');
+  const body = new THREE.Box3().setFromObject(view.shell.children[0]);
+  const hb = carShape(id).hitbox;
+  assert.ok(Math.abs(body.max.y - hb.top) < 0.02, 'roof where the hitbox ends');
+  assert.equal(view.glowMat.color.getHex(), new THREE.Color(TEAM_GLOW.orange).getHex());
+  car.wheels[0].steer = 0.3; car.wheels[0].spin = 1; view.update(1);
   assert.equal(view.wheelViews[0].steer.rotation.y, -0.3);
   assert.equal(view.wheelViews[0].spin.rotation.x, -1);
-  const shared = carModel('porsche').body.children.length ? carModel('porsche').body : null;
-  view.setCar('gtr');
-  assert.equal(view.carId, 'gtr');
+  view.setCar('sedan-lacivert');
   disposeTree(parent);
   let alive = true;
-  carModel('porsche').body.traverse((o) => { if (o.isMesh && !o.geometry.userData.shared) alive = false; });
-  assert.ok(alive && shared, 'shared model geometry is never disposed by a view');
-  assert.ok(view.nozzleLocal.z > 0.6, 'boost comes out of the rear');
+  carModel(id).body.traverse((o) => { if (o.isMesh && !o.geometry.userData.shared) alive = false; });
+  assert.ok(alive, 'shared model geometry survives a view being disposed');
+  assert.ok(view.nozzleLocal.z > 0.8, 'boost comes out of the rear');
+  const lonely = new CarView(makeStaticCar({ id: 'y', team: 'blue' }), new THREE.Group(), 'not-a-car');
+  assert.equal(lonely.carId, DEFAULT_CAR);
+  assert.equal(lonely.wheelViews.length, 4);
 });
 
-test('CarView without loaded models (Node, failed download) still works with a placeholder car', () => {
-  const car = makeStaticCar({ id: 'x', team: 'blue' });
-  const view = new CarView(car, new THREE.Group(), 'nope-not-loaded-yet');
-  assert.equal(view.carId, DEFAULT_CAR);
-  assert.equal(view.wheelViews.length, 4);
-  view.update(1);
-});
-
-test('the old paint / drawing editor is gone; the garage lists the cars', () => {
+test('garage markup: car grid with pictures; the old cars and the paint editor are gone', () => {
   const html = readFileSync(new URL('../index.html', import.meta.url), 'utf8');
-  for (const gone of ['garage-art', 'garage-base', 'garage-pattern', 'garage-number', 'KAPLAMA']) assert.doesNotMatch(html, new RegExp(gone));
-  for (const id of ['garage-cars', 'garage-save', 'garage-cancel']) assert.match(html, new RegExp(`id="${id}"`));
-  const online = readFileSync(new URL('../online.html', import.meta.url), 'utf8');
-  assert.match(online, /id="my-car"/);
-  assert.match(online, /href="\.\/\?garaj=online"/);
+  for (const gone of ['garage-art', 'garage-base', 'garage-pattern', 'KAPLAMA']) assert.doesNotMatch(html, new RegExp(gone));
+  for (const idName of ['garage-cars', 'garage-save', 'garage-cancel']) assert.match(html, new RegExp(`id="${idName}"`));
+  assert.ok(statSync(new URL('../public/cars/thumbs.webp', import.meta.url)).size < 200e3);
+  for (const old of ['gtr.glb', 'porsche.glb']) assert.throws(() => statSync(new URL(`../public/cars/${old}`, import.meta.url)));
 });

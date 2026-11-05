@@ -57,20 +57,9 @@ export class CarController {
 
     const R = physicsWorld.RAPIER;
     const c = this.cfg;
-    const hb = c.hitbox;
-    const w = hb.halfWidth * 2, h = hb.halfHeight * 2, l = hb.halfLength * 2;
-    // Principal inertia of the hitbox (local axes: x=right, y=up, z=back).
-    this.inertia = new Vector3((c.mass / 12) * (h * h + l * l), (c.mass / 12) * (w * w + l * l), (c.mass / 12) * (w * w + h * h));
-
     this.body = physicsWorld.world.createRigidBody(R.RigidBodyDesc.dynamic().setCanSleep(false).setCcdEnabled(true));
-    const colDesc = R.ColliderDesc.cuboid(hb.halfWidth, hb.halfHeight, hb.halfLength)
-      .setMassProperties(c.mass, c.centerOfMass, { x: this.inertia.x, y: this.inertia.y, z: this.inertia.z }, { x: 0, y: 0, z: 0, w: 1 })
-      .setFriction(c.friction)
-      .setRestitution(c.restitution)
-      .setRestitutionCombineRule(R.CoefficientCombineRule.Min)
-      .setCollisionGroups(GROUPS.car);
-    this.collider = physicsWorld.world.createCollider(colDesc, this.body);
-    this.comLocal = new Vector3(c.centerOfMass.x, c.centerOfMass.y, c.centerOfMass.z);
+    this.collider = null;
+    this._buildCollider();
 
     const W = c.wheels;
     const mk = (p, front, side) => ({
@@ -103,6 +92,48 @@ export class CarController {
     this.state = this._freshState();
     this.boost = this.boostCfg.startAmount;
     this.reset(spawn, heading);
+  }
+
+  /** Cuboid hitbox + mass properties from this.cfg (replaces the previous collider). */
+  _buildCollider() {
+    const R = this.physics.RAPIER;
+    const c = this.cfg;
+    const hb = c.hitbox;
+    const w = hb.halfWidth * 2, h = hb.halfHeight * 2, l = hb.halfLength * 2;
+    // Principal inertia of the hitbox (local axes: x=right, y=up, z=back).
+    this.inertia = new Vector3((c.mass / 12) * (h * h + l * l), (c.mass / 12) * (w * w + l * l), (c.mass / 12) * (w * w + h * h));
+    if (this.collider) this.physics.world.removeCollider(this.collider, false);
+    const colDesc = R.ColliderDesc.cuboid(hb.halfWidth, hb.halfHeight, hb.halfLength)
+      .setMassProperties(c.mass, c.centerOfMass, { x: this.inertia.x, y: this.inertia.y, z: this.inertia.z }, { x: 0, y: 0, z: 0, w: 1 })
+      .setFriction(c.friction)
+      .setRestitution(c.restitution)
+      .setRestitutionCombineRule(R.CoefficientCombineRule.Min)
+      .setCollisionGroups(GROUPS.car);
+    this.collider = this.physics.world.createCollider(colDesc, this.body);
+    this.comLocal = new Vector3(c.centerOfMass.x, c.centerOfMass.y, c.centerOfMass.z);
+  }
+
+  /**
+   * Switches to another car model's hitbox and wheel layout (a player taking over
+   * a bot's seat mid-match). A car standing on its wheels is lifted / lowered to the
+   * new resting height so it neither sinks into nor drops onto the floor.
+   */
+  setShape(physicsConfig) {
+    const before = CarController.restHeight({ car: this.cfg, world: { gravity: -this.gravity } });
+    this.cfg = physicsConfig.car;
+    this._buildCollider();
+    const W = this.cfg.wheels;
+    for (const wh of this.wheels) {
+      const p = wh.front ? W.front : W.rear;
+      wh.local.set(p.x * wh.side, p.y, p.z);
+    }
+    if (this.state.numWheelsContact > 0) {
+      const lift = CarController.restHeight({ car: this.cfg, world: { gravity: -this.gravity } }) - before;
+      const t = this.body.translation();
+      this.body.setTranslation({ x: t.x + this.up.x * lift, y: t.y + this.up.y * lift, z: t.z + this.up.z * lift }, true);
+      this._readBody();
+      this.snapInterpolation();
+    }
   }
 
   /** Height of the body origin above a flat floor when resting on its wheels. */

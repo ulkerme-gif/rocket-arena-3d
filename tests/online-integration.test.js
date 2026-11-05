@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { MatchHost } from '../src/net/MatchHost.js';
 import { PROTOCOL_VERSION } from '../src/net/roomCode.js';
+import { DEFAULT_CAR } from '../src/visuals/cars.js';
 import { expandState } from '../src/net/snapshot.js';
 import { CONFIG } from '../src/config/index.js';
 import { initRapier, seeded, C } from './helpers.js';
@@ -259,14 +260,14 @@ test('garbage packets and floods are ignored without crashing the host', async (
 test('car choices travel with the join and reach everyone through the roster; junk becomes the default car', async () => {
   const { match, host } = await hostedRoom(2);
   const porsche = handle('porsche');
-  match.handlePacket(porsche, { type: 'join', name: 'Porsche', version: PROTOCOL_VERSION, car: 'porsche' });
+  match.handlePacket(porsche, { type: 'join', name: 'Porsche', version: PROTOCOL_VERSION, car: 'pikap-sari' });
   const sneaky = handle('sneaky');
   match.handlePacket(sneaky, { type: 'join', name: 'X', version: PROTOCOL_VERSION, car: { evil: 'x'.repeat(5000) } });
   const seats = host.last('roster').seats;
   const bySeat = Object.fromEntries(seats.map((s) => [s.seat, s]));
-  assert.equal(bySeat['orange-1'].car, 'porsche');
-  assert.equal(bySeat['blue-2'].car, 'gtr', 'an invalid choice falls back to the default car');
-  assert.equal(bySeat['blue-1'].car, 'gtr', 'host without a stored choice drives the default car');
+  assert.equal(bySeat['orange-1'].car, 'pikap-sari');
+  assert.equal(bySeat['blue-2'].car, DEFAULT_CAR, 'an invalid choice falls back to the default car');
+  assert.equal(bySeat['blue-1'].car, DEFAULT_CAR, 'host without a stored choice drives the default car');
   assert.equal(bySeat['orange-2'].car, null, 'bot seats carry no choice (every tablet picks the same car by seat)');
   assert.ok(JSON.stringify(host.last('roster')).length < 4000, 'roster stays small');
   match.dispose();

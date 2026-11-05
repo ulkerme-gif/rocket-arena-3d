@@ -20,7 +20,7 @@ import { PROTOCOL_VERSION, codeFromLocation, inviteLink, normalizeRoomCode, room
 import { formatLabel, normalizeTeamSize } from './game/teams.js';
 import { mutatorLabel, normalizeMutator } from './game/mutators.js';
 import { NameTags } from './visuals/NameTags.js';
-import { botCar, carInfo, loadCar } from './visuals/cars.js';
+import { botCar, carLabel, loadCar } from './visuals/cars.js';
 import { loadCarModels } from './visuals/carModels.js';
 
 const el = id => document.getElementById(id);
@@ -85,7 +85,7 @@ class OnlineApp {
       event.target.value = this.mutator;
       el('room-mutator-name').textContent = mutatorLabel(this.mutator);
     });
-    el('my-car').textContent = carInfo(loadCar()).name;
+    el('my-car').textContent = carLabel(loadCar());
     this.modelsReady = loadCarModels(); // needed once a match starts; never blocks the lobby
     const invited = codeFromLocation();
     if (invited) {

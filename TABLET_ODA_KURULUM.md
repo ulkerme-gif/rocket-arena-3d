@@ -60,10 +60,10 @@ Not: Bu bilgiler yayınlanan sitede görünür; tarayıcı oyunlarında bu kaç�
 ## Garaj: araba seçimi
 
 Ana menüde **GARAJ · ARABA SEÇ** (online lobisinde **Araban: … · garajda değiştir**):
-- Soldan arabayı seç: **Nissan GT-R Nismo** veya **Porsche 718 Cayman GT4**. Araba sağdaki döner platformda görünür; parmağınla çevirebilirsin.
+- Resimli kartlardan arabanı seç (22 araba: sedan, spor, kas araba, SUV, pikap, cip, arazi). Seçtiğin araba sağdaki döner platformda görünür; parmağınla çevirebilirsin.
 - **BU ARABAYI SEÇ** deyince bu tablette saklanır. **GERİ** değişikliği kaydetmeden çıkar.
-- Boya takım renginde olur (mavi / turuncu). Online'da herkes senin arabanı görür.
-- Arabaların hepsi aynı fizik ve çarpışma kutusuyla oynar; fark sadece görünüşte.
+- Arabalar kendi boyasıyla görünür; takımın, arabanın altındaki mavi ya da turuncu ışıktan belli olur.
+- Her arabanın çarpışma kutusu kendi boyutundadır (arazi araçları biraz daha büyük ve yüksek). Hız, boost, zıplama ve yol tutuşu herkeste aynıdır.
 
 ## Online nasıl oynanır
 

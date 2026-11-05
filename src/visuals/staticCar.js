@@ -1,5 +1,9 @@
 import * as THREE from 'three';
 import { CONFIG } from '../config/index.js';
+import { restSuspension } from '../game/carPhysics.js';
+
+// Wheels drawn at their resting compression (guests get no suspension data).
+const REST_SUSPENSION = restSuspension(CONFIG.physics);
 
 /**
  * A car "model" without physics, shaped like CarController enough for CarView
@@ -21,7 +25,7 @@ export function makeStaticCar({ id, team, position = { x: 0, y: 0, z: 0 }, quate
     const front = z === wheel.front.z;
     car.wheels.push({
       local: { x: side * (front ? wheel.front.x : wheel.rear.x), y: front ? wheel.front.y : wheel.rear.y, z },
-      side, suspension: wheel.suspensionRestLength / 2, steer: 0, spin: 0,
+      side, suspension: REST_SUSPENSION, steer: 0, spin: 0,
     });
   }
   car.forward.applyQuaternion(car.quaternion);

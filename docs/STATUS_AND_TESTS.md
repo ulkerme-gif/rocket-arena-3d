@@ -1,5 +1,12 @@
 # ROCKET ARENA 3D — STATUS & TEST REPORT (2026-10-12)
 
+## Low-poly arabalar, top ölçeği (2026-11-05, ikinci yama)
+- GT-R / Cayman GT4 kaldırıldı; low-poly paketten 22 araba (kamyon, traktör ve römorklu pikap hariç) orijinal doku ve modeliyle eklendi (`public/cars/cars.glb`, ~1,8 MB; `thumbs.webp`).
+- Ölçek: önceki arabalar topun yanında çok küçüktü (1,45 × 0,6 × 0,42 m). Şimdi sedan 1,9 m (≈ top çapı), arabalar 1,8–2,05 m uzun, 0,54–0,80 m yüksek. Her arabanın hitbox'ı ve tekerlekleri kendi modelinden ölçülür (`carCatalog.js`, `carPhysics.js`); motor, boost, zıplama ve direksiyon herkeste aynı.
+- Takım rengi: arabanın altında mavi / turuncu ışık. Garaj: resimli araba ızgarası.
+- Düzeltme: misafir ekranında tekerlekler 5 cm gövdeye gömülü çiziliyordu (statik arabada süspansiyon dinlenme değeri yanlıştı).
+- Yeni / güncel testler: `cars` (22 araba, topa göre boyut, model = hitbox, tekerlekler yerde ve fizikteki yerinde, araba başına fizik ile dinlenme yüksekliği ve sürüş, maç ortasında katılan oyuncunun hitbox'ı, takım ışığı, paylaşılan modeller).
+
 ## Gerçek arabalar + yeni garaj (2026-11-05)
 - Eski düşük poligonlu araba ve kaplama / çizim düzenleyicisi kaldırıldı. Yerine iki gerçek model: Nissan GT-R Nismo (1,37 M → ~18,6 bin üçgen, 391 KB) ve Porsche 718 Cayman GT4 (2,9 M → ~41 bin üçgen, 735 KB), `public/cars/*.glb`.
 - Tekerlekler ayrı parçalar: dönme, direksiyon ve süspansiyon fizikten okunur; kaliperler dönmez. Boya takım rengindedir.

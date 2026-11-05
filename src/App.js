@@ -12,7 +12,7 @@ import { Settings } from './ui/Settings.js';
 import { ArenaView } from './visuals/ArenaView.js';
 import { GameView } from './visuals/GameView.js';
 import { Renderer } from './visuals/Renderer.js';
-import { CarView, REST } from './visuals/CarView.js';
+import { CarView, restHeightOf } from './visuals/CarView.js';
 import { NameTags } from './visuals/NameTags.js';
 import { makeStaticCar } from './visuals/staticCar.js';
 import { botCar, loadCar, saveCar } from './visuals/cars.js';
@@ -65,7 +65,7 @@ export class App {
     this.preview = null;
     this.returnToOnline = false;
     this.garage = new Garage(document, {
-      onChange: (carId) => this.preview?.view.setCar(carId),
+      onChange: (carId) => this._showPreviewCar(carId),
       onSave: (carId) => { saveCar(carId); this.closeGarage(); },
       onClose: () => this.closeGarage(),
     });
@@ -173,19 +173,19 @@ export class App {
     const bots = mode === MODE.MATCH ? [
       ...Array.from({ length: n - 1 }, (_, i) => ({ id: `blue-${i + 2}`, team: TEAM.BLUE, kind: 'bot' })),
       ...Array.from({ length: n }, (_, i) => ({ id: `orange-${i + 1}`, team: TEAM.ORANGE, kind: 'bot' })),
-    ] : [];
+    ].map((b) => ({ ...b, car: botCar(b.id) })) : [];
+    const myCar = loadCar();
     this.sim = new Simulation({
       RAPIER: this.RAPIER,
       config: CONFIG,
       mode,
-      players: [{ id: 'player', team: TEAM.BLUE, kind: 'human' }, ...bots],
+      players: [{ id: 'player', team: TEAM.BLUE, kind: 'human', car: myCar }, ...bots],
     });
     for (const bot of bots) {
       this.sim.attachBot(bot.id, new BotController({ carId: bot.id, team: bot.team, config: CONFIG.bot }));
     }
     this.matchLabel = mode === MODE.MATCH ? formatLabel(n) : 'FREE PLAY';
     document.body.classList.toggle('mode-training', mode === MODE.TRAINING);
-    const myCar = loadCar();
     this.view = new GameView(this.renderer, this.sim, { carFor: (id) => (id === 'player' ? myCar : botCar(id)) });
     this.tagObjects = new Map([...this.view.carViews].map(([id, view]) => [id, view.group]));
     this.nameTags.set(this.sim.cars.filter((c) => c.id !== 'player').map((c) => ({ id: c.id, text: 'BOT', team: c.team })));
@@ -342,12 +342,18 @@ export class App {
       const rim = new THREE.Mesh(new THREE.TorusGeometry(1.17, 0.012, 8, 96).rotateX(Math.PI / 2), new THREE.MeshBasicMaterial({ color: 0xc4fc40 }));
       rim.position.y = PLATFORM_TOP + 0.002;
       root.add(platform, rim);
-      const car = makeStaticCar({ id: 'preview', team: TEAM.BLUE, position: { x: 0, y: REST.height + PLATFORM_TOP, z: 0 } });
-      for (const wheel of car.wheels) wheel.suspension = REST.suspension;
+      const car = makeStaticCar({ id: 'preview', team: TEAM.BLUE });
       const view = new CarView(car, root, carId);
       this.preview = { root, car, view, angle: 2.3, drag: null };
     }
+    this._showPreviewCar(carId);
+  }
+
+  /** Garage turntable: shows a car standing on the platform (cars differ in height). */
+  _showPreviewCar(carId) {
+    if (!this.preview) return;
     this.preview.view.setCar(carId);
+    this.preview.car.position.y = restHeightOf(carId) + PLATFORM_TOP;
   }
 
   closeGarage() {
@@ -376,8 +382,8 @@ export class App {
     const tanHalf = Math.tan(THREE.MathUtils.degToRad(cam.fov) / 2);
     const offX = sheet ? 0 : -(Math.min(panel.right, W * 0.7) / W) * dist * tanHalf * cam.aspect;
     const offY = sheet ? -(Math.min(H - panel.top, H * 0.7) / H) * dist * tanHalf : 0;
-    const mid = PLATFORM_TOP + 0.24; // halfway up the car
-    cam.position.set(offX, mid + 0.8 + offY, dist);
+    const mid = PLATFORM_TOP + 0.36; // halfway up the car
+    cam.position.set(offX, mid + 0.95 + offY, dist + 0.6);
     cam.lookAt(offX, mid + offY, 0);
   }
 

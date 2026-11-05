@@ -11,6 +11,7 @@ import { BoostPadSystem } from './BoostPadSystem.js';
 import { GameRules } from './GameRules.js';
 import { MODE, TEAM } from './constants.js';
 import { configForMutator, MUTATOR, normalizeMutator } from './mutators.js';
+import { carPhysicsConfig } from './carPhysics.js';
 
 const v3 = (v) => ({ x: v.x, y: v.y, z: v.z });
 const q4 = (q) => ({ x: q.x, y: q.y, z: q.z, w: q.w });
@@ -27,7 +28,8 @@ export class Simulation {
    * @param {object} [o.config] defaults to CONFIG
   * @param {'match'|'training'|'demo'} [o.mode]
   * @param {string} [o.mutator]
-   * @param {Array<{id:string, team:'blue'|'orange', kind?:'human'|'bot'}>} [o.players]
+   * @param {Array<{id:string, team:'blue'|'orange', kind?:'human'|'bot', car?:string}>} [o.players]
+   *   car: car model id (src/game/carCatalog.js); sets this car's hitbox and wheels. Omitted: base shape.
    * @param {() => number} [o.random] RNG used for kickoff spots
    */
   constructor({ RAPIER, config = CONFIG, mode = MODE.MATCH, mutator = MUTATOR.CLASSIC, players, random = Math.random }) {
@@ -47,7 +49,8 @@ export class Simulation {
 
     players = players ?? [{ id: 'player', team: TEAM.BLUE, kind: 'human' }];
     this.cars = players.map((p) => {
-      const car = new CarController(this.physics, { id: p.id, team: p.team, physicsConfig: config.physics });
+      const car = new CarController(this.physics, { id: p.id, team: p.team, physicsConfig: carPhysicsConfig(config.physics, p.car) });
+      car.model = p.car ?? null;
       car.kind = p.kind ?? 'human';
       car.onEvent = (type, payload) => this.events.emit(type, payload);
       return car;
@@ -69,6 +72,14 @@ export class Simulation {
     if (config.mutatorSettings.infiniteBoost || (mode === MODE.TRAINING && config.rules.training.unlimitedBoost)) {
       for (const car of this.cars) car.unlimitedBoost = true;
     }
+  }
+
+  /** A different car model in a seat (mid-match join / leave): new hitbox and wheels, same position. */
+  setCarModel(carId, model) {
+    const car = this.carById.get(carId);
+    if (!car || car.model === model) return;
+    car.model = model;
+    car.setShape(carPhysicsConfig(this.config.physics, model));
   }
 
   /** Attach an AI controller: an object with update(gameState, dt) -> ControlState. */
