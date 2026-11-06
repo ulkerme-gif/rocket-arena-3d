@@ -1,19 +1,21 @@
 # Rocket Arena 3D — GitHub Pages (Mac / Pi / sunucu GEREKMEDEN)
 
-## Hazirlik
-- Bu ZIP'in **icindeki dosyalari** GitHub deposunun en ust dizinine yukle. ZIP dosyasinin kendisini tek dosya olarak yuklemek GitHub Pages kurulumu degildir.
-- Gizli `.github/workflows/pages.yml` klasorunu mutlaka ekle.
-- Chrome/Edge/Safari gibi bir tarayici yeterlidir; bilgisayar terminaline gerek yoktur.
-
-## 1 — GitHub uzerinde oyun sayfasi
-1. https://github.com/new adresine git; repo adini `rocket-arena-3d` koy, **Public** sec ve Create repository'ye bas.
-2. Depo sayfasinda **uploading an existing file** ya da **Add file > Upload files** secenegini ac.
-3. ZIP'i once cikar. `index.html`, `online.html`, `src/`, `tests/`, `package.json`, `package-lock.json`, `vite.config.js`, `.github/` dahil tum icerigi dosya yukleme ekranina surukle. `rocket-arena`/`rocket-arena-github-pages` adinda ekstra ust klasor olmasin.
-4. **Commit changes** ile kaydet. `.github` aktarimi browser uzerinden olmadiysa depoda **Add file > Create new file**, isim alanina `.github/workflows/pages.yml` yazip paketteki metni yapistir ve commit et.
-5. GitHub repository -> **Settings > Pages > Build and deployment > Source: GitHub Actions**.
-6. **Actions** sekmesinde `Deploy Rocket Arena to GitHub Pages` is akisini ac. Yesil basari isareti gorunmeli. Eger basarisizsa Actions logunu kontrol et.
-7. Oyun adresin: `https://KULLANICI_ADIN.github.io/rocket-arena-3d/` (kendi kullanici adini yaz; depo adini degistirdiysen onu da degistir).
-8. **1V1 · BOTA KARSI** ile tek oyunculu modunu dene. (Gercek tarayici/WebGL testi henuz tarafimizdan yapilmadi.)
+## 1 — Yeni repo (iPad + Codespaces)
+1. https://github.com/new adresine git. Repo adini yaz (ornek `rocket-arena-3d`), **Public** sec, **Add a README file** kutusunu isaretle (Codespaces bos repoda acilmaz), **Create repository**.
+2. Repo **Settings > Pages > Build and deployment > Source: GitHub Actions** sec.
+3. Repo ana sayfasinda **Code > Codespaces > Create codespace on main**.
+4. Tam proje ZIP'ini Codespaces'teki dosya listesinin en ustune (repo koku) surukle.
+5. Terminalde:
+   ```bash
+   cd "$(git rev-parse --show-toplevel)"
+   unzip -o -q rocket-arena-3d-tam-proje.zip
+   rm rocket-arena-3d-tam-proje.zip
+   git add -A
+   git commit -m "Rocket Arena 3D"
+   git push
+   ```
+6. **Actions** sekmesinde `Deploy Rocket Arena to GitHub Pages` yesil olunca oyun adresin: `https://KULLANICI_ADIN.github.io/REPO_ADIN/`. Vite yolu repo adindan otomatik alir; repo adini istedigin gibi koyabilirsin.
+7. Sonraki guncellemeler: yama ZIP'ini ayni sekilde repo kokune yukle, `unzip -o`, `git add -A`, `git commit`, `git push`.
 
 ## 2 — Online: tabletten oda kur (sunucu yok)
 1. Oyunda **ONLINE · ARKADAŞLARLA**'ya gir.
@@ -27,7 +29,7 @@
 - GitHub Pages'te CSS/JS yok veya 404: paket icerigi repo root'unda mi? workflow sonucunu ve Vite base ayarini kontrol et.
 - GitHub Actions testleri kirmiziysa deployment atlanir; is akisi logunu incele, testler gecmeden deployment basarili sayilmaz.
 - "Bu kodla açık bir oda bulunamadı": kod yanlış ya da kurucunun oyun ekranı kapandı.
-- "Oyun sürümleri farklı": bir tablette eski sürüm önbellekte. İki tablette de sayfayı yenile (gerekirse adresin sonuna `?v=3`).
+- "Oyun sürümleri farklı": bir tablette eski sürüm önbellekte. İki tablette de sayfayı yenile (gerekirse adresin sonuna `?v=` ve yeni bir sayi ekle).
 - "Eşleştirme servisine ulaşılamadı": internet bağlantısını kontrol et.
 - "Tabletler arasında doğrudan bağlantı kurulamadı": iki cihazı aynı Wi-Fi ağına bağla (bazı okul/kurum ağları doğrudan bağlantıyı engeller).
 

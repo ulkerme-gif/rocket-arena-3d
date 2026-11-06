@@ -3,7 +3,7 @@ import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.j
 import { CARS } from './cars.js';
 
 /**
- * Car models: one file, public/cars/cars.glb, with a node per car (CARS[].node).
+ * Car models: public/cars/cars.glb (low-poly pack) and banana.glb (banana car), a node per car (CARS[].node).
  * Each car node has "<node>_body" and four "<node>_wheel_FL/FR/RL/RR" nodes placed at
  * their axles (extras.radius). Ground is y = 0, the nose points to -Z and the body is
  * centred on z = 0, the same frame as the physics shape in carCatalog.js.
@@ -45,13 +45,15 @@ export function registerCarModels(gltf) {
 export const carModel = (id) => models.get(id) ?? null;
 export const carModelsLoaded = () => CARS.every((c) => models.has(c.id));
 
-/** Loads cars.glb once. If it fails, every car is drawn as a plain placeholder box. */
+export const MODEL_FILES = Object.freeze(['cars/cars.glb', 'cars/banana.glb']);
+
+/** Loads every model file once. A file that fails leaves its cars as plain placeholder boxes. */
 let loading = null;
 export function loadCarModels(base = assetBase()) {
-  loading ??= new GLTFLoader().setMeshoptDecoder(MeshoptDecoder)
-    .loadAsync(`${base}cars/cars.glb`)
+  const loader = new GLTFLoader().setMeshoptDecoder(MeshoptDecoder);
+  loading ??= Promise.all(MODEL_FILES.map((file) => loader.loadAsync(`${base}${file}`)
     .then((gltf) => { registerCarModels(gltf); })
-    .catch((error) => { console.warn('[Cars] cars.glb could not be loaded', error); loading = null; });
+    .catch((error) => { console.warn(`[Cars] ${file} could not be loaded`, error); })));
   return loading;
 }
 

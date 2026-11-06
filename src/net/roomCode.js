@@ -3,6 +3,8 @@
  * The code is what players type; it maps 1:1 to the host tablet's PeerJS id.
  * Characters that are easy to confuse on a touch keyboard (0/O, 1/I/L) never appear.
  */
+import { codeReward } from '../game/unlocks.js';
+
 export const ROOM_CODE_ALPHABET = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
 export const ROOM_CODE_LENGTH = 4;
 /** Shared PeerJS namespace prefix: keeps our rooms apart from other apps on the public broker. */
@@ -11,12 +13,14 @@ export const PEER_ID_PREFIX = 'rocket-arena-3d-';
 export const PROTOCOL_VERSION = 4; // 4: players pick a car model instead of a painted skin
 
 export function generateRoomCode(random = Math.random) {
-  let code = '';
-  for (let i = 0; i < ROOM_CODE_LENGTH; i++) {
-    const index = Math.floor(random() * ROOM_CODE_ALPHABET.length) % ROOM_CODE_ALPHABET.length;
-    code += ROOM_CODE_ALPHABET[index];
+  for (;;) {
+    let code = '';
+    for (let i = 0; i < ROOM_CODE_LENGTH; i++) {
+      const index = Math.floor(random() * ROOM_CODE_ALPHABET.length) % ROOM_CODE_ALPHABET.length;
+      code += ROOM_CODE_ALPHABET[index];
+    }
+    if (!codeReward(code)) return code; // a secret unlock code is never a room
   }
-  return code;
 }
 
 /** Accepts " k7m-2 " style input. Returns the canonical code, or null if it can never be valid. */

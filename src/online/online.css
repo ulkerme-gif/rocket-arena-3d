@@ -15,6 +15,7 @@
 #online-status { min-height:26px; margin:6px 0 0; font: 600 13px/1.6 system-ui; color:#d0e2ee; white-space:pre-line; }
 .online-form .network-test { min-height:40px; margin-top:0; padding:8px 0; font-size:16px; justify-content:flex-start; }
 #online-status[data-tone="error"] { color:#ffb38a; }
+#online-status[data-tone="unlock"] { color:#ffd23f; font-weight:800; }
 .online-back { display:inline-block; margin-top:4px; color:#b1d2e6; font:600 13px system-ui; text-decoration:none; }
 .online-back:hover { text-decoration:underline; }
 #online-leave { cursor:pointer; }

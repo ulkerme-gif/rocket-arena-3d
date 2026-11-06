@@ -20,7 +20,8 @@ import { PROTOCOL_VERSION, codeFromLocation, inviteLink, normalizeRoomCode, room
 import { formatLabel, normalizeTeamSize } from './game/teams.js';
 import { mutatorLabel, normalizeMutator } from './game/mutators.js';
 import { NameTags } from './visuals/NameTags.js';
-import { botCar, carLabel, loadCar } from './visuals/cars.js';
+import { botCar, carInfo, carLabel, loadCar, saveCar } from './visuals/cars.js';
+import { codeReward, unlock } from './game/unlocks.js';
 import { loadCarModels } from './visuals/carModels.js';
 
 const el = id => document.getElementById(id);
@@ -85,7 +86,7 @@ class OnlineApp {
       event.target.value = this.mutator;
       el('room-mutator-name').textContent = mutatorLabel(this.mutator);
     });
-    el('my-car').textContent = carLabel(loadCar());
+    this.updateCarLabel();
     this.modelsReady = loadCarModels(); // needed once a match starts; never blocks the lobby
     const invited = codeFromLocation();
     if (invited) {
@@ -97,7 +98,8 @@ class OnlineApp {
     el('online-join').onclick = () => this.joinRoom();
     el('network-test').onclick = () => this.testNetwork();
     el('room-code').addEventListener('input', e => {
-      e.target.value = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 4);
+      e.target.value = e.target.value.toUpperCase().replace(/[^A-Z0-9Ç]/g, '').slice(0, 4); // Ç: secret codes only
+      this.redeemSecret(e.target);
     });
     el('room-code').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); this.joinRoom(); } });
     el('room-share').onclick = () => this.shareInvite();
@@ -120,6 +122,27 @@ class OnlineApp {
 
     this._frame = this._frame.bind(this);
     requestAnimationFrame(this._frame);
+  }
+
+  updateCarLabel() { el('my-car').textContent = carLabel(loadCar()); }
+
+  /**
+   * Secret codes in the ODA KODU box. They contain characters room codes never use, so they
+   * can't hide a real room: unlock the car on this tablet and put the player in it.
+   */
+  redeemSecret(input) {
+    const reward = codeReward(input.value);
+    if (!reward) return false;
+    input.value = '';
+    input.blur(); // close the iPad keyboard so the message is visible
+    const fresh = unlock(reward);
+    saveCar(reward);
+    this.updateCarLabel();
+    const name = carInfo(reward).name;
+    this.status(fresh
+      ? `🍌 Gizli araba açıldı: ${name}! Arabana takıldı. Garajda da artık seçebilirsin.`
+      : `🍌 ${name} arabana takıldı.`, 'unlock');
+    return true;
   }
 
   status(text, tone = 'info') {
@@ -281,6 +304,7 @@ class OnlineApp {
   // ---------------------------------------------------------------- guest
   async joinRoom() {
     if (this.busy) return;
+    if (this.redeemSecret(el('room-code'))) return;
     const typed = el('room-code').value;
     const code = normalizeRoomCode(typed);
     if (!code) { this.status(roomCodeProblem(typed), 'error'); el('room-code').focus(); return; }

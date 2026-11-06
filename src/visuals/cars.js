@@ -4,6 +4,7 @@
  * handling are shared. The original paint is kept; a team-coloured glow shows the team.
  */
 import { CAR_LIST, THUMB } from '../game/carCatalog.js';
+import { isUnlocked } from '../game/unlocks.js';
 
 export const CAR_KEY = 'rocket-arena-car';
 export const CARS = CAR_LIST;
@@ -28,9 +29,17 @@ export function saveCar(id, storage = globalThis.localStorage) {
   return car;
 }
 
-/** Bots get their car from the seat id, so every tablet shows the same one. */
+/** Cars anyone can pick; secret ones (e.g. MUZ) need an unlock code first. */
+export const OPEN_CARS = CARS.filter((c) => !c.secret);
+
+/** Garage list: open cars + secret cars unlocked on this tablet (or already being driven). */
+export function garageCars(storage = globalThis.localStorage, current = null) {
+  return CARS.filter((c) => !c.secret || c.id === current || isUnlocked(c.id, storage));
+}
+
+/** Bots get their car from the seat id, so every tablet shows the same one. Never a secret car. */
 export function botCar(seatId) {
   let h = 7;
   for (const ch of String(seatId)) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
-  return CARS[h % CARS.length].id;
+  return OPEN_CARS[h % OPEN_CARS.length].id;
 }

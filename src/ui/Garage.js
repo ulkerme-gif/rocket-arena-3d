@@ -1,4 +1,4 @@
-import { CARS, THUMB, cleanCar } from '../visuals/cars.js';
+import { CARS, THUMB, cleanCar, garageCars } from '../visuals/cars.js';
 import { assetBase } from '../visuals/carModels.js';
 
 /**
@@ -40,6 +40,12 @@ export class Garage {
       color.className = 'car-color';
       color.textContent = car.color;
       b.append(pic, name, color);
+      if (car.secret) {
+        const tag = doc.createElement('span');
+        tag.className = 'car-secret';
+        tag.textContent = 'GİZLİ';
+        b.append(tag);
+      }
       b.addEventListener('click', () => this.select(car.id));
       list.append(b);
     }
@@ -48,8 +54,9 @@ export class Garage {
       const step = { ArrowRight: 1, ArrowLeft: -1, ArrowDown: 2, ArrowUp: -2 }[e.key];
       if (!step) return;
       e.preventDefault();
-      const i = CARS.findIndex((c) => c.id === this.selected);
-      this.select(CARS[Math.min(CARS.length - 1, Math.max(0, i + step))].id);
+      const list = garageCars(undefined, this.saved);
+      const i = list.findIndex((c) => c.id === this.selected);
+      this.select(list[Math.min(list.length - 1, Math.max(0, i + step))].id);
       list.querySelector(`[data-car="${this.selected}"]`)?.focus();
     });
     this.el('garage-save').addEventListener('click', () => this.onSave?.(this.selected));
@@ -59,6 +66,9 @@ export class Garage {
   open(carId) {
     this.selected = cleanCar(carId);
     this.saved = this.selected;
+    // Secret cars stay hidden until they are unlocked on this tablet.
+    const shown = new Set(garageCars(undefined, this.saved).map((c) => c.id));
+    for (const b of this.el('garage-cars').querySelectorAll('.car-card')) b.hidden = !shown.has(b.dataset.car);
     this._render();
     this.el('garage-cars').querySelector(`[data-car="${this.selected}"]`)?.scrollIntoView?.({ block: 'nearest' });
   }

@@ -16,6 +16,7 @@ import { MatchHost } from '../src/net/MatchHost.js';
 import { PROTOCOL_VERSION } from '../src/net/roomCode.js';
 
 const GLB = new URL('../public/cars/cars.glb', import.meta.url);
+const BANANA = new URL('../public/cars/banana.glb', import.meta.url);
 // Node has no image decoder: the palette texture becomes an empty texture (geometry is what's tested).
 globalThis.self ??= globalThis;
 THREE.TextureLoader.prototype.load = function (url, onLoad) {
@@ -24,15 +25,17 @@ THREE.TextureLoader.prototype.load = function (url, onLoad) {
   return texture;
 };
 let loaded = null;
-const loadAll = () => (loaded ??= new Promise((res, rej) => {
-  const buf = readFileSync(GLB);
+const parse = (url) => new Promise((res, rej) => {
+  const buf = readFileSync(url);
   new GLTFLoader().setMeshoptDecoder(MeshoptDecoder).parse(buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength), '', res, rej);
-}).then((gltf) => registerCarModels(gltf)));
+});
+const loadAll = () => (loaded ??= Promise.all([GLB, BANANA].map(parse)).then((all) => all.reduce((n, gltf) => n + registerCarModels(gltf), 0)));
 const BALL_DIAMETER = CONFIG.physics.ball.radius * 2;
 
-test('car choice: 22 cars, only known ids, persisted, bots get the same car on every tablet', () => {
-  assert.equal(CARS.length, 22);
-  assert.equal(new Set(CARS.map((c) => c.id)).size, 22);
+test('car choice: 23 cars (pack + banana), only known ids, persisted, bots get the same car on every tablet', () => {
+  assert.equal(CARS.length, 23);
+  assert.equal(new Set(CARS.map((c) => c.id)).size, 23);
+  assert.equal(CARS[0].id, 'muz', 'the banana car is first in the garage');
   assert.equal(cleanCar('pikap-sari'), 'pikap-sari');
   for (const junk of [null, undefined, '', 'gtr', 'porsche', 42, {}, '__proto__']) assert.equal(cleanCar(junk), DEFAULT_CAR);
   const store = new Map();
@@ -55,8 +58,9 @@ test('size against the ball: every car is close to the ball in length and clearl
   }
 });
 
-test('cars.glb: one small file with every car, body + four wheels touching the ground where the physics has them', async () => {
+test('model files: small, every car has a body + four wheels touching the ground where the physics has them', async () => {
   assert.ok(statSync(GLB).size < 2.5e6, 'cars.glb stays small');
+  assert.ok(statSync(BANANA).size < 1.2e6, 'banana.glb stays small');
   assert.equal(await loadAll(), CARS.length);
   for (const car of CARS) {
     const model = carModel(car.id);
@@ -76,7 +80,7 @@ test('cars.glb: one small file with every car, body + four wheels touching the g
 });
 
 test('per-car physics: each car rests on its own wheels at its own height, hitbox matches the model', async () => {
-  for (const id of ['sedan-sari', 'arazi-beyaz', 'pikap-sari']) {
+  for (const id of ['sedan-sari', 'arazi-beyaz', 'pikap-sari', 'muz']) {
     const sim = await createSim({ players: [{ id: 'player', team: 'blue', kind: 'human', car: id }] });
     sim.ball.setEnabled(false);
     const car = sim.cars[0];

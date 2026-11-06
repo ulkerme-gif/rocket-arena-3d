@@ -1,5 +1,10 @@
 # ROCKET ARENA 3D — STATUS & TEST REPORT (2026-10-12)
 
+## Muz araba (2026-11-06)
+- Kullanıcının muz modeli (Banan.fbx + doku) araba yapıldı: şasi, paketteki tekerlekler, krom tamponlar, farlar/stoplar, egzoz, ön cam, koltuk ve direksiyon. `public/cars/banana.glb` (~0,87 MB), garajda ilk sırada. 2,07 m uzun, 0,78 m geniş, 0,83 m yüksek; çarpışma kutusu modelden ölçüldü.
+- Muz araba gizli: garajda görünmez, online ekranındaki oda kodu kutusuna gizli kod yazınca açılır (kod: `src/game/unlocks.js`). Botlar almaz; oda üretici gizli kodu oda kodu olarak vermez.
+- Testler: 23 araba, iki model dosyası, muzun fizikte kendi tekerleklerinde durması ve sürülmesi, gizli kod / kilit / garaj gizleme (`secret-car`).
+
 ## Low-poly arabalar, top ölçeği (2026-11-05, ikinci yama)
 - GT-R / Cayman GT4 kaldırıldı; low-poly paketten 22 araba (kamyon, traktör ve römorklu pikap hariç) orijinal doku ve modeliyle eklendi (`public/cars/cars.glb`, ~1,8 MB; `thumbs.webp`).
 - Ölçek: önceki arabalar topun yanında çok küçüktü (1,45 × 0,6 × 0,42 m). Şimdi sedan 1,9 m (≈ top çapı), arabalar 1,8–2,05 m uzun, 0,54–0,80 m yüksek. Her arabanın hitbox'ı ve tekerlekleri kendi modelinden ölçülür (`carCatalog.js`, `carPhysics.js`); motor, boost, zıplama ve direksiyon herkeste aynı.

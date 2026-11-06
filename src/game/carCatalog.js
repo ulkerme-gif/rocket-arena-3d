@@ -1,10 +1,13 @@
 /**
- * Car list (generated from the low-poly car pack by the asset build; do not edit by hand).
+ * Car list: the banana car (banana.glb) + the low-poly car pack (cars.glb), built by the asset scripts.
  * One shared scale: the SEDAN family is 1.9 m long, every other car keeps its size relative to it.
  * shape: model coordinates (ground y = 0, nose to -Z, body centred on z = 0) used by the physics
  * (src/game/carPhysics.js) and by CarView, so the hitbox is exactly where the car is drawn.
  */
 export const CAR_LIST = Object.freeze([
+  // Hand-made: the banana car (public/cars/banana.glb, built from Banan.fbx with added chassis, wheels, glass).
+  // Secret: hidden in the garage until unlocked with a code (src/game/unlocks.js); bots never get it.
+  {"id": "muz", "node": "banana_car", "name": "MUZ", "color": "Sarı", "thumb": 22, "secret": true, "size": {"length": 2.065, "width": 0.78, "height": 0.83}, "shape": {"hitbox": {"halfWidth": 0.39, "halfLength": 1.032, "bottom": 0.105, "top": 0.83}, "wheelRadius": 0.165, "front": {"x": 0.36, "z": -0.612}, "rear": {"x": 0.36, "z": 0.608}}},
   {"id": "sedan-lacivert", "node": "Object554", "name": "SEDAN", "color": "Lacivert", "thumb": 0, "size": {"length": 1.9, "width": 0.724, "height": 0.54}, "shape": {"hitbox": {"halfWidth": 0.362, "halfLength": 0.95, "bottom": 0.101, "top": 0.54}, "wheelRadius": 0.141, "front": {"x": 0.298, "z": -0.453}, "rear": {"x": 0.298, "z": 0.582}}},
   {"id": "sedan-sari", "node": "Object567", "name": "SEDAN", "color": "Sarı", "thumb": 1, "size": {"length": 1.9, "width": 0.724, "height": 0.548}, "shape": {"hitbox": {"halfWidth": 0.362, "halfLength": 0.95, "bottom": 0.101, "top": 0.548}, "wheelRadius": 0.141, "front": {"x": 0.298, "z": -0.453}, "rear": {"x": 0.298, "z": 0.582}}},
   {"id": "sedan-turkuaz", "node": "Object570", "name": "SEDAN", "color": "Turkuaz", "thumb": 2, "size": {"length": 1.9, "width": 0.724, "height": 0.544}, "shape": {"hitbox": {"halfWidth": 0.362, "halfLength": 0.95, "bottom": 0.101, "top": 0.544}, "wheelRadius": 0.141, "front": {"x": 0.298, "z": -0.453}, "rear": {"x": 0.298, "z": 0.582}}},
